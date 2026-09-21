@@ -62,7 +62,8 @@ jobs:
       shell: bash
       # Only the core package is published. QRCoder.Xaml is still packed and attached to the
       # GitHub release, but is intentionally not pushed to NuGet.org.
-      run: dotnet nuget push "out/QRCoder-Magick.NET-Q8.*.nupkg" -k "${{ steps.login.outputs.NUGET_API_KEY }}" -s https://api.nuget.org/v3/index.json --skip-duplicate
+      # The glob is deliberately unquoted so that bash expands it to the actual file name.
+      run: dotnet nuget push out/QRCoder-Magick.NET-Q8.*.nupkg -k "${{ steps.login.outputs.NUGET_API_KEY }}" -s https://api.nuget.org/v3/index.json --skip-duplicate
 
     - name: Upload Nuget packages as release artifacts
       uses: actions/github-script@v8
