@@ -3,8 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using KGySoft.Drawing;
-using KGySoft.Drawing.Imaging;
+using ImageMagick;
 
 namespace Shouldly;
 
@@ -14,19 +13,21 @@ public static partial class ShouldMatchApprovedExtensions
 {
     public static void ShouldMatchApprovedImage(this byte[] imageBytes, string? discriminator = null, string? customMessage = null, bool asMonochrome = false)
     {
-        using var ms = new MemoryStream(imageBytes);
-        using var image = (Bitmap)Image.FromStream(ms);
+        using var image = new MagickImage(imageBytes);
         image.ShouldMatchApproved(discriminator, customMessage, asMonochrome);
     }
-    public static void ShouldMatchApproved(this Bitmap image, string? discriminator = null, string? customMessage = null, bool asMonochrome = false)
+
+    public static void ShouldMatchApproved(this IMagickImage<byte> image, string? discriminator = null, string? customMessage = null, bool asMonochrome = false)
     {
-        // encode to gif first for easier visual verification, and using a third party lib to avoid platform-specific compression differences
-        var readableBitmapData = image.GetReadableBitmapData();
+        // encode to gif first for easier visual verification, using a deterministic encoder to avoid platform-specific compression differences
+        using var clone = image.Clone();
         if (asMonochrome)
-            readableBitmapData = readableBitmapData.Clone(KnownPixelFormat.Format1bppIndexed);
-        using var ms = new MemoryStream();
-        GifEncoder.EncodeImage(readableBitmapData, ms);
-        ms.ToArray().ShouldMatchApproved("gif", discriminator, customMessage);
+        {
+            clone.ColorType = ColorType.Bilevel;
+            clone.Depth = 1;
+        }
+        clone.Format = MagickFormat.Gif;
+        clone.ToByteArray().ShouldMatchApproved("gif", discriminator, customMessage);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -76,10 +77,10 @@ public static partial class ShouldMatchApprovedExtensions
         var approvedFile = Path.Combine(outputFolder, $"{className}.{testMethodName}{discriminatorPart}.approved.{fileExtension}");
         var receivedFile = Path.Combine(outputFolder, $"{className}.{testMethodName}{discriminatorPart}.received.{fileExtension}");
 
-        File.WriteAllBytes(receivedFile, actual);
-
         if (!File.Exists(approvedFile))
         {
+            File.WriteAllBytes(receivedFile, actual);
+
             throw new ShouldAssertException($"""
                 Approval file {approvedFile}
                     does not exist
@@ -92,13 +93,17 @@ public static partial class ShouldMatchApprovedExtensions
         }
 
         var approvedFileContents = File.ReadAllBytes(approvedFile);
-        var receivedFileContents = File.ReadAllBytes(receivedFile);
 
-        var contentsMatch = approvedFileContents.AsSpan().SequenceEqual(receivedFileContents.AsSpan());
+        // Compare against the in-memory bytes rather than reading the received file back from disk. The received
+        // file lives in the shared source folder, so a concurrently running target framework could otherwise
+        // overwrite or delete it between the write and the read.
+        var contentsMatch = approvedFileContents.AsSpan().SequenceEqual(actual.AsSpan());
 
         if (!contentsMatch)
         {
-            var baseMessage = $"Binary files do not match. Expected length: {approvedFileContents.Length}, Actual length: {receivedFileContents.Length}";
+            File.WriteAllBytes(receivedFile, actual);
+
+            var baseMessage = $"Binary files do not match. Expected length: {approvedFileContents.Length}, Actual length: {actual.Length}";
             var copyCommand = $"""
 
 
@@ -115,6 +120,17 @@ public static partial class ShouldMatchApprovedExtensions
             throw new ShouldAssertException(message);
         }
 
-        File.Delete(receivedFile);
+        // Clean up any received file left behind by an earlier failing run.
+        if (File.Exists(receivedFile))
+        {
+            try
+            {
+                File.Delete(receivedFile);
+            }
+            catch (IOException)
+            {
+                // A concurrently running target framework may have removed it already.
+            }
+        }
     }
 }

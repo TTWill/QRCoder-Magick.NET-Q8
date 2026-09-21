@@ -1,5 +1,4 @@
-#if !NETSTANDARD1_3
-using System.Drawing;
+using ImageMagick;
 using QRCoder.Extensions;
 using static QRCoder.QRCodeGenerator;
 using static QRCoder.SvgQRCode;
@@ -29,7 +28,7 @@ public class SvgQRCode : AbstractQRCode, IDisposable
     /// <returns>Returns the QR code graphic as an SVG string.</returns>
     public string GetGraphic()
     {
-        return GetGraphic(Size.Empty, Color.Black, Color.White, true, SizingMode.ViewBoxAttribute, null);
+        return GetGraphic(new MagickGeometry(0, 0), MagickColors.Black, MagickColors.White, true, SizingMode.ViewBoxAttribute, null);
     }
 
     /// <summary>
@@ -39,8 +38,8 @@ public class SvgQRCode : AbstractQRCode, IDisposable
     /// <returns>Returns the QR code graphic as an SVG string.</returns>
     public string GetGraphic(int pixelsPerModule)
     {
-        var viewBox = new Size(pixelsPerModule * QrCodeData.ModuleMatrix.Count, pixelsPerModule * QrCodeData.ModuleMatrix.Count);
-        return GetGraphic(viewBox, Color.Black, Color.White);
+        var viewBox = new MagickGeometry((uint)(pixelsPerModule * QrCodeData.ModuleMatrix.Count), (uint)(pixelsPerModule * QrCodeData.ModuleMatrix.Count));
+        return GetGraphic(viewBox, MagickColors.Black, MagickColors.White);
     }
 
     /// <summary>
@@ -53,11 +52,11 @@ public class SvgQRCode : AbstractQRCode, IDisposable
     /// <param name="sizingMode">Defines whether width/height or viewBox should be used for size definition.</param>
     /// <param name="logo">An optional logo to be rendered on the code (either Bitmap or SVG).</param>
     /// <returns>Returns the QR code graphic as an SVG string.</returns>
-    public string GetGraphic(int pixelsPerModule, Color darkColor, Color lightColor, bool drawQuietZones = true, SizingMode sizingMode = SizingMode.WidthHeightAttribute, SvgLogo? logo = null)
+    public string GetGraphic(int pixelsPerModule, MagickColor darkColor, MagickColor lightColor, bool drawQuietZones = true, SizingMode sizingMode = SizingMode.WidthHeightAttribute, SvgLogo? logo = null)
     {
         var offset = drawQuietZones ? 0 : 4;
         var edgeSize = QrCodeData.ModuleMatrix.Count * pixelsPerModule - (offset * 2 * pixelsPerModule);
-        var viewBox = new Size(edgeSize, edgeSize);
+        var viewBox = new MagickGeometry((uint)edgeSize, (uint)edgeSize);
         return GetGraphic(viewBox, darkColor, lightColor, drawQuietZones, sizingMode, logo);
     }
 
@@ -75,7 +74,7 @@ public class SvgQRCode : AbstractQRCode, IDisposable
     {
         var offset = drawQuietZones ? 0 : 4;
         var edgeSize = QrCodeData.ModuleMatrix.Count * pixelsPerModule - (offset * 2 * pixelsPerModule);
-        var viewBox = new Size(edgeSize, edgeSize);
+        var viewBox = new MagickGeometry((uint)edgeSize, (uint)edgeSize);
         return GetGraphic(viewBox, darkColorHex, lightColorHex, drawQuietZones, sizingMode, logo);
     }
 
@@ -87,8 +86,8 @@ public class SvgQRCode : AbstractQRCode, IDisposable
     /// <param name="sizingMode">Defines whether width/height or viewBox should be used for size definition.</param>
     /// <param name="logo">An optional logo to be rendered on the code (either Bitmap or SVG).</param>
     /// <returns>Returns the QR code graphic as an SVG string.</returns>
-    public string GetGraphic(Size viewBox, bool drawQuietZones = true, SizingMode sizingMode = SizingMode.WidthHeightAttribute, SvgLogo? logo = null)
-        => GetGraphic(viewBox, Color.Black, Color.White, drawQuietZones, sizingMode, logo);
+    public string GetGraphic(MagickGeometry viewBox, bool drawQuietZones = true, SizingMode sizingMode = SizingMode.WidthHeightAttribute, SvgLogo? logo = null)
+        => GetGraphic(viewBox, MagickColors.Black, MagickColors.White, drawQuietZones, sizingMode, logo);
 
     /// <summary>
     /// Returns a QR code as an SVG string with custom colors and optional quiet zones and an optional logo.
@@ -100,7 +99,7 @@ public class SvgQRCode : AbstractQRCode, IDisposable
     /// <param name="sizingMode">Defines whether width/height or viewBox should be used for size definition.</param>
     /// <param name="logo">An optional logo to be rendered on the code (either Bitmap or SVG).</param>
     /// <returns>Returns the QR code graphic as an SVG string.</returns>
-    public string GetGraphic(Size viewBox, Color darkColor, Color lightColor, bool drawQuietZones = true, SizingMode sizingMode = SizingMode.WidthHeightAttribute, SvgLogo? logo = null)
+    public string GetGraphic(MagickGeometry viewBox, MagickColor darkColor, MagickColor lightColor, bool drawQuietZones = true, SizingMode sizingMode = SizingMode.WidthHeightAttribute, SvgLogo? logo = null)
         => GetGraphic(viewBox, ColorToHex(darkColor), ColorToHex(lightColor), drawQuietZones, sizingMode, logo);
 
     /// <summary>
@@ -113,7 +112,7 @@ public class SvgQRCode : AbstractQRCode, IDisposable
     /// <param name="sizingMode">Defines whether width/height or viewBox should be used for size definition.</param>
     /// <param name="logo">An optional logo to be rendered on the code (either Bitmap or SVG).</param>
     /// <returns>Returns the QR code graphic as an SVG string.</returns>
-    public string GetGraphic(Size viewBox, string darkColorHex, string lightColorHex, bool drawQuietZones = true, SizingMode sizingMode = SizingMode.WidthHeightAttribute, SvgLogo? logo = null)
+    public string GetGraphic(MagickGeometry viewBox, string darkColorHex, string lightColorHex, bool drawQuietZones = true, SizingMode sizingMode = SizingMode.WidthHeightAttribute, SvgLogo? logo = null)
     {
         int offset = drawQuietZones ? 0 : 4;
         int drawableModulesCount = QrCodeData.ModuleMatrix.Count - (drawQuietZones ? 0 : offset * 2);
@@ -161,10 +160,10 @@ public class SvgQRCode : AbstractQRCode, IDisposable
         }
 
         // Calculate logo attributes if needed (in module coordinates)
-        RectangleF? logoAttr = null;
+        LogoRect? logoAttr = null;
         if (logo != null)
         {
-            logoAttr = GetLogoAttributes(logo, new Size(drawableModulesCount, drawableModulesCount));
+            logoAttr = GetLogoAttributes(logo, drawableModulesCount, drawableModulesCount);
         }
 
         // Draw light modules as path if dark is not fully opaque
@@ -282,7 +281,7 @@ public class SvgQRCode : AbstractQRCode, IDisposable
     /// <summary>
     /// Determines if a module at (x,y) is blocked by the logo area defined by attr.
     /// </summary>
-    private static bool IsBlockedByLogo(int x, int y, RectangleF attr)
+    private static bool IsBlockedByLogo(int x, int y, LogoRect attr)
     {
         return
             x + 1 > attr.X &&             // Right edge of module > left edge of logo
@@ -292,15 +291,34 @@ public class SvgQRCode : AbstractQRCode, IDisposable
     }
 
     /// <summary>
+    /// Represents the position and size of a logo within the QR code, in module coordinates.
+    /// </summary>
+    private readonly struct LogoRect
+    {
+        public LogoRect(float x, float y, float width, float height)
+        {
+            X = x;
+            Y = y;
+            Width = width;
+            Height = height;
+        }
+
+        public float X { get; }
+        public float Y { get; }
+        public float Width { get; }
+        public float Height { get; }
+    }
+
+    /// <summary>
     /// Calculates the logo's position and size within the QR code based on the specified percentage size.
     /// </summary>
-    private static RectangleF GetLogoAttributes(SvgLogo logo, Size viewBox)
+    private static LogoRect GetLogoAttributes(SvgLogo logo, int viewBoxWidth, int viewBoxHeight)
     {
-        var imgWidth = logo.GetIconSizePercent() * viewBox.Width / 100f;
-        var imgHeight = logo.GetIconSizePercent() * viewBox.Height / 100f;
-        var imgPosX = viewBox.Width / 2f - imgWidth / 2f;
-        var imgPosY = viewBox.Height / 2f - imgHeight / 2f;
-        return new RectangleF(imgPosX, imgPosY, imgWidth, imgHeight);
+        var imgWidth = logo.GetIconSizePercent() * viewBoxWidth / 100f;
+        var imgHeight = logo.GetIconSizePercent() * viewBoxHeight / 100f;
+        var imgPosX = viewBoxWidth / 2f - imgWidth / 2f;
+        var imgPosY = viewBoxHeight / 2f - imgHeight / 2f;
+        return new LogoRect(imgPosX, imgPosY, imgWidth, imgHeight);
     }
 
     //Clean double values for international use/formats
@@ -378,14 +396,14 @@ public class SvgQRCode : AbstractQRCode, IDisposable
     /// </summary>
     /// <param name="color">The color to convert.</param>
     /// <returns>A hex string representation of the color.</returns>
-    private static string ColorToHex(Color color)
+    private static string ColorToHex(MagickColor color)
     {
-        if (color == Color.Black)
+        if (color == MagickColors.Black)
         {
             // Use shorthand #000 for black
             return "#000";
         }
-        else if (color == Color.White)
+        else if (color == MagickColors.White)
         {
             // Use shorthand #FFF for white
             return "#FFF";
@@ -435,31 +453,25 @@ public class SvgQRCode : AbstractQRCode, IDisposable
         private readonly object _logoRaw;
         private readonly bool _isEmbedded;
 
-#if SYSTEM_DRAWING
         /// <summary>
         /// Create a logo object to be used in SvgQRCode renderer
         /// </summary>
-        /// <param name="iconRasterized">Logo to be rendered as Bitmap/rasterized graphic</param>
+        /// <param name="iconRasterized">Logo to be rendered as rasterized graphic</param>
         /// <param name="iconSizePercent">Degree of percentage coverage of the QR code by the logo</param>
         /// <param name="fillLogoBackground">If true, the background behind the logo will be cleaned</param>
-#if NET6_0_OR_GREATER
-        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-#endif
-        public SvgLogo(Bitmap iconRasterized, int iconSizePercent = 15, bool fillLogoBackground = true)
+        public SvgLogo(IMagickImage<byte> iconRasterized, int iconSizePercent = 15, bool fillLogoBackground = true)
         {
             _iconSizePercent = iconSizePercent;
-            using (var ms = new System.IO.MemoryStream())
+            using (var clone = iconRasterized.Clone())
             {
-                using var bitmap = new Bitmap(iconRasterized);
-                bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
-                _logoData = Convert.ToBase64String(ms.GetBuffer(), 0, (int)ms.Length, Base64FormattingOptions.None);
+                clone.Format = MagickFormat.Png;
+                _logoData = Convert.ToBase64String(clone.ToByteArray(), Base64FormattingOptions.None);
             }
             _mediaType = MediaType.PNG;
             _fillLogoBackground = fillLogoBackground;
             _logoRaw = iconRasterized;
             _isEmbedded = false;
         }
-#endif
 
         /// <summary>
         /// Create a logo object to be used in SvgQRCode renderer
@@ -588,5 +600,3 @@ public static class SvgQRCodeHelper
         return qrCode.GetGraphic(pixelsPerModule, darkColorHex, lightColorHex, drawQuietZones, sizingMode, logo);
     }
 }
-
-#endif

@@ -1,16 +1,12 @@
-#if SYSTEM_DRAWING
-using System.Drawing;
-using System.Drawing.Drawing2D;
+using ImageMagick;
+using ImageMagick.Drawing;
 using static QRCoder.QRCodeGenerator;
 
 namespace QRCoder;
 
 /// <summary>
-/// Represents a QR code generator that outputs QR codes as bitmap images.
+/// Represents a QR code generator that outputs QR codes as raster images.
 /// </summary>
-#if NET6_0_OR_GREATER
-[System.Runtime.Versioning.SupportedOSPlatform("windows")]
-#endif
 public class QRCode : AbstractQRCode, IDisposable
 {
     /// <summary>
@@ -26,37 +22,37 @@ public class QRCode : AbstractQRCode, IDisposable
     public QRCode(QRCodeData data) : base(data) { }
 
     /// <summary>
-    /// Creates a black and white bitmap image of the QR code.
+    /// Creates a black and white image of the QR code.
     /// </summary>
     /// <param name="pixelsPerModule">The number of pixels each dark/light module of the QR code will occupy in the final QR code image.</param>
-    /// <returns>Returns the QR code graphic as a bitmap.</returns>
-    public Bitmap GetGraphic(int pixelsPerModule)
-        => GetGraphic(pixelsPerModule, Color.Black, Color.White, true);
+    /// <returns>Returns the QR code graphic as a <see cref="MagickImage"/>.</returns>
+    public MagickImage GetGraphic(int pixelsPerModule)
+        => GetGraphic(pixelsPerModule, MagickColors.Black, MagickColors.White, true);
 
     /// <summary>
-    /// Creates a colored bitmap image of the QR code.
+    /// Creates a colored image of the QR code.
     /// </summary>
     /// <param name="pixelsPerModule">The number of pixels each dark/light module of the QR code will occupy in the final QR code image.</param>
     /// <param name="darkColorHtmlHex">The color of the dark modules in HTML hex format.</param>
     /// <param name="lightColorHtmlHex">The color of the light modules in HTML hex format.</param>
     /// <param name="drawQuietZones">Indicates if quiet zones around the QR code should be drawn.</param>
-    /// <returns>Returns the QR code graphic as a bitmap.</returns>
-    public Bitmap GetGraphic(int pixelsPerModule, string darkColorHtmlHex, string lightColorHtmlHex, bool drawQuietZones = true)
-        => GetGraphic(pixelsPerModule, ColorTranslator.FromHtml(darkColorHtmlHex), ColorTranslator.FromHtml(lightColorHtmlHex), drawQuietZones);
+    /// <returns>Returns the QR code graphic as a <see cref="MagickImage"/>.</returns>
+    public MagickImage GetGraphic(int pixelsPerModule, string darkColorHtmlHex, string lightColorHtmlHex, bool drawQuietZones = true)
+        => GetGraphic(pixelsPerModule, new MagickColor(darkColorHtmlHex), new MagickColor(lightColorHtmlHex), drawQuietZones);
 
     /// <summary>
-    /// Creates a colored bitmap image of the QR code.
+    /// Creates a colored image of the QR code.
     /// </summary>
     /// <param name="pixelsPerModule">The number of pixels each dark/light module of the QR code will occupy in the final QR code image.</param>
     /// <param name="darkColor">The color of the dark modules.</param>
     /// <param name="lightColor">The color of the light modules.</param>
     /// <param name="drawQuietZones">Indicates if quiet zones around the QR code should be drawn.</param>
-    /// <returns>Returns the QR code graphic as a bitmap.</returns>
-    public Bitmap GetGraphic(int pixelsPerModule, Color darkColor, Color lightColor, bool drawQuietZones = true)
+    /// <returns>Returns the QR code graphic as a <see cref="MagickImage"/>.</returns>
+    public MagickImage GetGraphic(int pixelsPerModule, MagickColor darkColor, MagickColor lightColor, bool drawQuietZones = true)
         => GetGraphic(pixelsPerModule, darkColor, lightColor, null, 0, 0, drawQuietZones, null);
 
     /// <summary>
-    /// Creates a colored bitmap image of the QR code with an optional icon in the center.
+    /// Creates a colored image of the QR code with an optional icon in the center.
     /// </summary>
     /// <param name="pixelsPerModule">The number of pixels each dark/light module of the QR code will occupy in the final QR code image.</param>
     /// <param name="darkColor">The color of the dark modules.</param>
@@ -66,71 +62,67 @@ public class QRCode : AbstractQRCode, IDisposable
     /// <param name="iconBorderWidth">The width of the border around the icon.</param>
     /// <param name="drawQuietZones">Indicates if quiet zones around the QR code should be drawn.</param>
     /// <param name="iconBackgroundColor">The background color of the icon.</param>
-    /// <returns>Returns the QR code graphic as a bitmap.</returns>
-    public Bitmap GetGraphic(int pixelsPerModule, Color darkColor, Color lightColor, Bitmap? icon = null, int iconSizePercent = 15, int iconBorderWidth = 0, bool drawQuietZones = true, Color? iconBackgroundColor = null)
+    /// <returns>Returns the QR code graphic as a <see cref="MagickImage"/>.</returns>
+    public MagickImage GetGraphic(int pixelsPerModule, MagickColor darkColor, MagickColor lightColor, IMagickImage<byte>? icon = null, int iconSizePercent = 15, int iconBorderWidth = 0, bool drawQuietZones = true, MagickColor? iconBackgroundColor = null)
     {
         var size = (QrCodeData.ModuleMatrix.Count - (drawQuietZones ? 0 : 8)) * pixelsPerModule;
         var offset = drawQuietZones ? 0 : 4 * pixelsPerModule;
 
-        var bmp = new Bitmap(size, size, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-
-        using (var gfx = Graphics.FromImage(bmp))
-        using (var lightBrush = new SolidBrush(lightColor))
-        using (var darkBrush = new SolidBrush(darkColor))
+        // Fill background with light color
+        var image = new MagickImage(lightColor, (uint)size, (uint)size)
         {
-            gfx.InterpolationMode = InterpolationMode.HighQualityBicubic;
-            gfx.CompositingQuality = CompositingQuality.HighQuality;
-            gfx.CompositingMode = CompositingMode.SourceCopy;
+            Format = MagickFormat.Png32
+        };
 
-            // Fill background with light color
-            gfx.Clear(lightColor);
+        // Draw all dark modules using RLE-combined rectangles
+        var drawables = new Drawables().StrokeWidth(0).StrokeColor(MagickColors.Transparent).FillColor(darkColor);
+        AddModuleRectangles(drawables, pixelsPerModule, offset, drawQuietZones);
+        drawables.Draw(image);
 
-            var drawIconFlag = icon != null && iconSizePercent > 0 && iconSizePercent <= 100;
+        var drawIconFlag = icon != null && iconSizePercent > 0 && iconSizePercent <= 100;
+        if (drawIconFlag)
+        {
+            double iconDestWidth = iconSizePercent * image.Width / 100d;
+            double iconDestHeight = iconDestWidth * icon!.Height / icon.Width;
+            double iconX = (image.Width - iconDestWidth) / 2;
+            double iconY = (image.Height - iconDestHeight) / 2;
 
-            // Create path for all dark modules using RLE
-            using (var darkPath = CreatePathFromModules(pixelsPerModule, offset, drawQuietZones))
+            // Only render icon/logo background, if iconBorderWidth is set > 0
+            if (iconBorderWidth > 0)
             {
-                gfx.FillPath(darkBrush, darkPath);
+                var backgroundColor = iconBackgroundColor ?? lightColor;
+                new Drawables()
+                    .StrokeWidth(0)
+                    .StrokeColor(MagickColors.Transparent)
+                    .FillColor(backgroundColor)
+                    .RoundRectangle(
+                        iconX - iconBorderWidth,
+                        iconY - iconBorderWidth,
+                        iconX + iconDestWidth + iconBorderWidth,
+                        iconY + iconDestHeight + iconBorderWidth,
+                        iconBorderWidth * 2,
+                        iconBorderWidth * 2)
+                    .Draw(image);
             }
 
-            if (drawIconFlag)
-            {
-                // Set compositing mode to SourceOver for icon rendering
-                gfx.CompositingMode = CompositingMode.SourceOver;
-
-                float iconDestWidth = iconSizePercent * bmp.Width / 100f;
-                float iconDestHeight = drawIconFlag ? iconDestWidth * icon!.Height / icon.Width : 0;
-                float iconX = (bmp.Width - iconDestWidth) / 2;
-                float iconY = (bmp.Height - iconDestHeight) / 2;
-                var centerDest = new RectangleF(iconX - iconBorderWidth, iconY - iconBorderWidth, iconDestWidth + iconBorderWidth * 2, iconDestHeight + iconBorderWidth * 2);
-                var iconDestRect = new RectangleF(iconX, iconY, iconDestWidth, iconDestHeight);
-                var iconBgBrush = iconBackgroundColor != null ? new SolidBrush((Color)iconBackgroundColor) : lightBrush;
-                //Only render icon/logo background, if iconBorderWith is set > 0
-                if (iconBorderWidth > 0)
-                {
-                    using var iconPath = CreateRoundedRectanglePath(centerDest, iconBorderWidth * 2);
-                    gfx.FillPath(iconBgBrush, iconPath);
-                }
-                gfx.DrawImage(icon!, iconDestRect, new RectangleF(0, 0, icon!.Width, icon.Height), GraphicsUnit.Pixel);
-            }
-
-            gfx.Save();
+            using var resizedIcon = icon!.Clone();
+            resizedIcon.Resize(new MagickGeometry((uint)Math.Round(iconDestWidth), (uint)Math.Round(iconDestHeight)) { IgnoreAspectRatio = true });
+            image.Composite(resizedIcon, (int)Math.Round(iconX), (int)Math.Round(iconY), CompositeOperator.Over);
         }
 
-        return bmp;
+        return image;
     }
 
     /// <summary>
-    /// Creates a GraphicsPath containing rectangles for all dark modules in the QR code.
+    /// Adds rectangles for all dark modules in the QR code to the specified drawables.
     /// Uses Run-Length Encoding (RLE) to combine adjoining dark modules in each row into single rectangles.
     /// </summary>
+    /// <param name="drawables">The drawables to add the rectangles to.</param>
     /// <param name="pixelsPerModule">The number of pixels per module.</param>
     /// <param name="offset">The offset to apply for quiet zones.</param>
     /// <param name="drawQuietZones">Whether quiet zones are being drawn.</param>
-    /// <returns>A GraphicsPath containing all dark module rectangles.</returns>
-    private GraphicsPath CreatePathFromModules(int pixelsPerModule, int offset, bool drawQuietZones)
+    private void AddModuleRectangles(IDrawables<byte> drawables, int pixelsPerModule, int offset, bool drawQuietZones)
     {
-        var path = new GraphicsPath();
         var matrix = QrCodeData.ModuleMatrix;
         var size = matrix.Count;
         var startIdx = drawQuietZones ? 0 : 4;
@@ -159,47 +151,21 @@ public class QRCode : AbstractQRCode, IDisposable
                 var rectX = startX * pixelsPerModule - offset;
                 var rectY = y * pixelsPerModule - offset;
                 var rectWidth = (x - startX) * pixelsPerModule;
-                var rectHeight = pixelsPerModule;
 
-                path.AddRectangle(new Rectangle(rectX, rectY, rectWidth, rectHeight));
+                // Magick rectangle coordinates are inclusive, hence the -1
+                drawables.Rectangle(rectX, rectY, rectX + rectWidth - 1, rectY + pixelsPerModule - 1);
             }
         }
-
-        return path;
-    }
-
-    /// <summary>
-    /// Creates a rounded rectangle path for drawing.
-    /// </summary>
-    /// <param name="rect">The rectangle for which to create the rounded path.</param>
-    /// <param name="cornerRadius">The radius of the corners.</param>
-    /// <returns>Returns the rounded rectangle path.</returns>
-    internal static GraphicsPath CreateRoundedRectanglePath(RectangleF rect, int cornerRadius)
-    {
-        var roundedRect = new GraphicsPath();
-        roundedRect.AddArc(rect.X, rect.Y, cornerRadius * 2, cornerRadius * 2, 180, 90);
-        roundedRect.AddLine(rect.X + cornerRadius, rect.Y, rect.Right - cornerRadius * 2, rect.Y);
-        roundedRect.AddArc(rect.X + rect.Width - cornerRadius * 2, rect.Y, cornerRadius * 2, cornerRadius * 2, 270, 90);
-        roundedRect.AddLine(rect.Right, rect.Y + cornerRadius * 2, rect.Right, rect.Y + rect.Height - cornerRadius * 2);
-        roundedRect.AddArc(rect.X + rect.Width - cornerRadius * 2, rect.Y + rect.Height - cornerRadius * 2, cornerRadius * 2, cornerRadius * 2, 0, 90);
-        roundedRect.AddLine(rect.Right - cornerRadius * 2, rect.Bottom, rect.X + cornerRadius * 2, rect.Bottom);
-        roundedRect.AddArc(rect.X, rect.Bottom - cornerRadius * 2, cornerRadius * 2, cornerRadius * 2, 90, 90);
-        roundedRect.AddLine(rect.X, rect.Bottom - cornerRadius * 2, rect.X, rect.Y + cornerRadius * 2);
-        roundedRect.CloseFigure();
-        return roundedRect;
     }
 }
 
 /// <summary>
-/// Provides static methods for creating bitmap QR codes.
+/// Provides static methods for creating raster QR codes.
 /// </summary>
-#if NET6_0_OR_GREATER
-[System.Runtime.Versioning.SupportedOSPlatform("windows")]
-#endif
 public static class QRCodeHelper
 {
     /// <summary>
-    /// Creates a bitmap QR code with a single function call.
+    /// Creates a raster QR code with a single function call.
     /// </summary>
     /// <param name="plainText">The text or payload to be encoded inside the QR code.</param>
     /// <param name="pixelsPerModule">The number of pixels each dark/light module of the QR code will occupy in the final QR code image.</param>
@@ -214,8 +180,8 @@ public static class QRCodeHelper
     /// <param name="iconSizePercent">The size of the icon as a percentage of the QR code size.</param>
     /// <param name="iconBorderWidth">The width of the border around the icon.</param>
     /// <param name="drawQuietZones">Indicates if quiet zones around the QR code should be drawn.</param>
-    /// <returns>Returns the QR code graphic as a bitmap.</returns>
-    public static Bitmap GetQRCode(string plainText, int pixelsPerModule, Color darkColor, Color lightColor, ECCLevel eccLevel, bool forceUtf8 = false, bool utf8BOM = false, EciMode eciMode = EciMode.Default, int requestedVersion = -1, Bitmap? icon = null, int iconSizePercent = 15, int iconBorderWidth = 0, bool drawQuietZones = true)
+    /// <returns>Returns the QR code graphic as a <see cref="MagickImage"/>.</returns>
+    public static MagickImage GetQRCode(string plainText, int pixelsPerModule, MagickColor darkColor, MagickColor lightColor, ECCLevel eccLevel, bool forceUtf8 = false, bool utf8BOM = false, EciMode eciMode = EciMode.Default, int requestedVersion = -1, IMagickImage<byte>? icon = null, int iconSizePercent = 15, int iconBorderWidth = 0, bool drawQuietZones = true)
     {
         using var qrGenerator = new QRCodeGenerator();
         using var qrCodeData = qrGenerator.CreateQrCode(plainText, eccLevel, forceUtf8, utf8BOM, eciMode, requestedVersion);
@@ -223,5 +189,3 @@ public static class QRCodeHelper
         return qrCode.GetGraphic(pixelsPerModule, darkColor, lightColor, icon, iconSizePercent, iconBorderWidth, drawQuietZones);
     }
 }
-
-#endif

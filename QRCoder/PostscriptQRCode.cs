@@ -1,6 +1,5 @@
-#if !NETSTANDARD1_3
-using System.Drawing;
 using System.Text;
+using ImageMagick;
 using static QRCoder.QRCodeGenerator;
 
 namespace QRCoder;
@@ -30,8 +29,8 @@ public class PostscriptQRCode : AbstractQRCode, IDisposable
     /// <returns>Returns the QR code graphic as a PostScript string.</returns>
     public string GetGraphic(int pointsPerModule, bool epsFormat = false)
     {
-        var viewBox = new Size(pointsPerModule * QrCodeData.ModuleMatrix.Count, pointsPerModule * QrCodeData.ModuleMatrix.Count);
-        return GetGraphic(viewBox, Color.Black, Color.White, true, epsFormat);
+        var viewBox = new MagickGeometry((uint)(pointsPerModule * QrCodeData.ModuleMatrix.Count), (uint)(pointsPerModule * QrCodeData.ModuleMatrix.Count));
+        return GetGraphic(viewBox, MagickColors.Black, MagickColors.White, true, epsFormat);
     }
 
     /// <summary>
@@ -43,9 +42,9 @@ public class PostscriptQRCode : AbstractQRCode, IDisposable
     /// <param name="drawQuietZones">Indicates if quiet zones around the QR code should be drawn.</param>
     /// <param name="epsFormat">Indicates if the output should be in EPS format.</param>
     /// <returns>Returns the QR code graphic as a PostScript string.</returns>
-    public string GetGraphic(int pointsPerModule, Color darkColor, Color lightColor, bool drawQuietZones = true, bool epsFormat = false)
+    public string GetGraphic(int pointsPerModule, MagickColor darkColor, MagickColor lightColor, bool drawQuietZones = true, bool epsFormat = false)
     {
-        var viewBox = new Size(pointsPerModule * QrCodeData.ModuleMatrix.Count, pointsPerModule * QrCodeData.ModuleMatrix.Count);
+        var viewBox = new MagickGeometry((uint)(pointsPerModule * QrCodeData.ModuleMatrix.Count), (uint)(pointsPerModule * QrCodeData.ModuleMatrix.Count));
         return GetGraphic(viewBox, darkColor, lightColor, drawQuietZones, epsFormat);
     }
 
@@ -60,7 +59,7 @@ public class PostscriptQRCode : AbstractQRCode, IDisposable
     /// <returns>Returns the QR code graphic as a PostScript string.</returns>
     public string GetGraphic(int pointsPerModule, string darkColorHex, string lightColorHex, bool drawQuietZones = true, bool epsFormat = false)
     {
-        var viewBox = new Size(pointsPerModule * QrCodeData.ModuleMatrix.Count, pointsPerModule * QrCodeData.ModuleMatrix.Count);
+        var viewBox = new MagickGeometry((uint)(pointsPerModule * QrCodeData.ModuleMatrix.Count), (uint)(pointsPerModule * QrCodeData.ModuleMatrix.Count));
         return GetGraphic(viewBox, darkColorHex, lightColorHex, drawQuietZones, epsFormat);
     }
 
@@ -71,8 +70,8 @@ public class PostscriptQRCode : AbstractQRCode, IDisposable
     /// <param name="drawQuietZones">Indicates if quiet zones around the QR code should be drawn.</param>
     /// <param name="epsFormat">Indicates if the output should be in EPS format.</param>
     /// <returns>Returns the QR code graphic as a PostScript string.</returns>
-    public string GetGraphic(Size viewBox, bool drawQuietZones = true, bool epsFormat = false)
-        => GetGraphic(viewBox, Color.Black, Color.White, drawQuietZones, epsFormat);
+    public string GetGraphic(MagickGeometry viewBox, bool drawQuietZones = true, bool epsFormat = false)
+        => GetGraphic(viewBox, MagickColors.Black, MagickColors.White, drawQuietZones, epsFormat);
 
     /// <summary>
     /// Creates a colored PostScript code representation of the QR code.
@@ -83,8 +82,8 @@ public class PostscriptQRCode : AbstractQRCode, IDisposable
     /// <param name="drawQuietZones">Indicates if quiet zones around the QR code should be drawn.</param>
     /// <param name="epsFormat">Indicates if the output should be in EPS format.</param>
     /// <returns>Returns the QR code graphic as a PostScript string.</returns>
-    public string GetGraphic(Size viewBox, string darkColorHex, string lightColorHex, bool drawQuietZones = true, bool epsFormat = false)
-        => GetGraphic(viewBox, ColorTranslator.FromHtml(darkColorHex), ColorTranslator.FromHtml(lightColorHex), drawQuietZones, epsFormat);
+    public string GetGraphic(MagickGeometry viewBox, string darkColorHex, string lightColorHex, bool drawQuietZones = true, bool epsFormat = false)
+        => GetGraphic(viewBox, new MagickColor(darkColorHex), new MagickColor(lightColorHex), drawQuietZones, epsFormat);
 
     /// <summary>
     /// Creates a colored PostScript code representation of the QR code.
@@ -95,7 +94,7 @@ public class PostscriptQRCode : AbstractQRCode, IDisposable
     /// <param name="drawQuietZones">Indicates if quiet zones around the QR code should be drawn.</param>
     /// <param name="epsFormat">Indicates if the output should be in EPS format.</param>
     /// <returns>Returns the QR code graphic as a PostScript string.</returns>
-    public string GetGraphic(Size viewBox, Color darkColor, Color lightColor, bool drawQuietZones = true, bool epsFormat = false)
+    public string GetGraphic(MagickGeometry viewBox, MagickColor darkColor, MagickColor lightColor, bool drawQuietZones = true, bool epsFormat = false)
     {
         var offset = drawQuietZones ? 0 : 4;
         var drawableModulesCount = QrCodeData.ModuleMatrix.Count - (drawQuietZones ? 0 : offset * 2);
@@ -312,4 +311,3 @@ public static class PostscriptQRCodeHelper
         return qrCode.GetGraphic(pointsPerModule, darkColorHex, lightColorHex, drawQuietZones, epsFormat);
     }
 }
-#endif

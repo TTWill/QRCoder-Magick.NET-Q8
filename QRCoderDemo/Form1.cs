@@ -2,6 +2,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Windows.Forms;
 using QRCoder;
+using QRCoderDemo.Extensions;
 
 namespace QRCoderDemo;
 
@@ -28,8 +29,11 @@ public partial class Form1 : Form
         using var qrGenerator = new QRCodeGenerator();
         using var qrCodeData = qrGenerator.CreateQrCode(textBoxQRCode.Text, eccLevel);
         using var qrCode = new QRCode(qrCodeData);
-        pictureBoxQRCode.BackgroundImage = qrCode.GetGraphic(20, GetPrimaryColor(), GetBackgroundColor(),
-            GetIconBitmap(), (int)iconSize.Value);
+        pictureBoxQRCode.BackgroundImage = qrCode.GetGraphic(
+            pixelsPerModule: 20,
+            darkColor: GetPrimaryColor().ToMagickColor(), lightColor: GetBackgroundColor().ToMagickColor(),
+            icon: GetIconBitmap()?.ToMagickImage(),
+            iconSizePercent: (int)iconSize.Value)?.ToImage();
 
         pictureBoxQRCode.Size = new System.Drawing.Size(pictureBoxQRCode.Width, pictureBoxQRCode.Height);
         //Set the SizeMode to center the image.

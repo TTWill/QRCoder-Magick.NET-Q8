@@ -11,8 +11,8 @@
   
   <PropertyGroup>
     <!-- Set version and default properties -->
-    <VersionPrefix>1.6.1-preview</VersionPrefix>
-    <LangVersion>12</LangVersion>
+    <VersionPrefix>1.0.0-preview</VersionPrefix>
+    <LangVersion>14</LangVersion>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <ImplicitUsings>enable</ImplicitUsings>

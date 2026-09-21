@@ -17,11 +17,9 @@ jobs:
       fail-fast: false
       matrix:
         dotnet-framework:
-          - { name: ".NET Framework 4.6.2", framework: "net462", coverage: false, no-build: true, sdk: "" }
-          - { name: ".NET Core 2.1", framework: "netcoreapp2.1", coverage: true, no-build: false, sdk: "2.1.x" }
-          - { name: ".NET Core 3.1", framework: "netcoreapp3.1", coverage: true, no-build: true, sdk: "3.1.x" }
-          - { name: ".NET 5.0 Windows", framework: "net5.0-windows", coverage: true, no-build: true, sdk: "5.0.x" }
-          - { name: ".NET 6.0 Windows", framework: "net6.0-windows", coverage: true, no-build: true, sdk: "6.0.x" }
+          - { name: ".NET 8.0 Windows", framework: "net8.0-windows", coverage: true, no-build: false, sdk: "8.0.x" }
+          - { name: ".NET 9.0 Windows", framework: "net9.0-windows", coverage: true, no-build: false, sdk: "9.0.x" }
+          - { name: ".NET 10.0 Windows", framework: "net10.0-windows", coverage: true, no-build: false, sdk: "10.0.x" }
 
     steps:
     - name: Checkout code
@@ -33,6 +31,8 @@ jobs:
         dotnet-version: |
           ${{ matrix.dotnet-framework.sdk }}
           8.0.x
+          9.0.x
+          10.0.x
 
     - name: Run tests for ${{ matrix.dotnet-framework.name }}
       working-directory: QRCoderTests
@@ -47,7 +47,10 @@ jobs:
     - name: Install .NET SDK
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: |
+          8.0.x
+          9.0.x
+          10.0.x
 
     - name: Run trim analysis
       working-directory: QRCoderTrimAnalysis

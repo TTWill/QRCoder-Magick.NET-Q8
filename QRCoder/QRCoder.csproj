@@ -1,14 +1,18 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <!-- Set essential properties -->
-    <TargetFrameworks>net35;net40;netstandard1.3;netstandard2.0;netstandard2.1;net5.0;net6.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;net5.0;net6.0;net8.0;net9.0;net10.0</TargetFrameworks>
     <IsTrimmable Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))">true</IsTrimmable>
     <IsPackable>true</IsPackable>
 
+    <!-- Ship as QRCoder-Magick.NET-Q8 on NuGet, but keep the assembly/namespace as QRCoder -->
+    <PackageId>QRCoder-Magick.NET-Q8</PackageId>
+
     <!-- Set NuGet package properties -->
-    <PackageTags>c# csharp qr qrcoder qrcode qr-generator qr-code-generator</PackageTags>
-    <Description>QRCoder is a simple library, written in C#.NET, which enables you to create QR codes.</Description>
+    <PackageTags>c# csharp qr qrcoder qrcode qr-generator qr-code-generator magick imagemagick</PackageTags>
+    <Description>QRCoder is a simple library, written in C#.NET, which enables you to create QR codes. This fork renders using Magick.NET instead of System.Drawing, so raster renderers work cross-platform. The assembly and namespace remain 'QRCoder'.</Description>
+    <PackageReleaseNotes>Breaking: System.Drawing has been replaced with Magick.NET. Raster renderers now return MagickImage instead of Bitmap, and colors use MagickColor. Breaking: net35, net40 and netstandard1.3 are no longer supported; .NET Framework 4.7.2+ (including net48) remains supported via netstandard2.0. Adds net8.0, net9.0 and net10.0 targets. See CHANGELOG.md for migration details.</PackageReleaseNotes>
 
     <!-- Set strong name and COM properties -->
     <AssemblyOriginatorKeyFile>QRCoderStrongName.snk</AssemblyOriginatorKeyFile>
@@ -24,22 +28,12 @@
     <InternalsVisibleTo Include="QRCoderTests" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net35' OR '$(TargetFramework)' == 'net40' ">
-    <Reference Include="PresentationCore" />
-    <Reference Include="PresentationFramework" />
-    <Reference Include="WindowsBase" />
+  <ItemGroup>
+    <PackageReference Include="Magick.NET-Q8-AnyCPU" Version="14.17.1" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.3' OR '$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'netstandard2.1' ">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'netstandard2.1' ">
     <PackageReference Include="System.Text.Encoding.CodePages" Version="5.0.0" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'netstandard2.1' OR '$(TargetFramework)' == 'net5.0' OR '$(TargetFramework)' == 'net5.0-windows' ">
-    <PackageReference Include="System.Drawing.Common" Version="5.0.3" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' OR '$(TargetFramework)' == 'net6.0-windows' ">
-    <PackageReference Include="System.Drawing.Common" Version="6.0.0" />
   </ItemGroup>
 
 </Project>

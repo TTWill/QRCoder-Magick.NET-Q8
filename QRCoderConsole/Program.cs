@@ -1,13 +1,13 @@
-using System.Drawing.Imaging;
 using System.IO;
 using System.Windows.Markup;
+using ImageMagick;
 using NDesk.Options;
 using QRCoder;
 using QRCoderConsole.DataObjects;
 
 namespace QRCoderConsole;
 
-#if NET6_0 && WINDOWS
+#if WINDOWS
 [System.Runtime.Versioning.SupportedOSPlatform("windows")]
 #endif
 internal sealed class MainClass
@@ -144,9 +144,9 @@ internal sealed class MainClass
             case SupportedImageFormat.Tiff:
                 using (var code = new QRCode(data))
                 {
-                    using var bitmap = code.GetGraphic(pixelsPerModule, foreground, background, true);
+                    using var image = code.GetGraphic(pixelsPerModule, foreground, background, true);
                     var actualFormat = OptionSetter.GetImageFormat(imgFormat.ToString());
-                    bitmap.Save(outputFileName, actualFormat);
+                    image.Write(outputFileName, actualFormat);
                 }
                 break;
             case SupportedImageFormat.Svg:
@@ -227,17 +227,14 @@ public static class OptionSetter
     public static QRCodeGenerator.ECCLevel GetECCLevel(string value)
         => Enum.TryParse(value, true, out QRCodeGenerator.ECCLevel level) ? level : QRCodeGenerator.ECCLevel.Default;
 
-#if NET6_0 && WINDOWS
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-#endif
-    public static ImageFormat GetImageFormat(string value) => value.ToLowerInvariant() switch
+    public static MagickFormat GetImageFormat(string value) => value.ToLowerInvariant() switch
     {
-        "jpg" => ImageFormat.Jpeg,
-        "jpeg" => ImageFormat.Jpeg,
-        "gif" => ImageFormat.Gif,
-        "bmp" => ImageFormat.Bmp,
-        "tiff" => ImageFormat.Tiff,
-        _ => ImageFormat.Png,
+        "jpg" => MagickFormat.Jpeg,
+        "jpeg" => MagickFormat.Jpeg,
+        "gif" => MagickFormat.Gif,
+        "bmp" => MagickFormat.Bmp,
+        "tiff" => MagickFormat.Tiff,
+        _ => MagickFormat.Png32,
     };
 }
 

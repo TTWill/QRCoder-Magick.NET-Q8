@@ -37,7 +37,7 @@ public class PngByteQRCodeRendererTests
         //Create QR code
         var gen = new QRCodeGenerator();
         var data = gen.CreateQrCode("This is a quick test! 123#?", QRCodeGenerator.ECCLevel.L);
-        var pngCodeGfx = new PngByteQRCode(data).GetGraphic(5, Color.Red, Color.Blue);
+        var pngCodeGfx = new PngByteQRCode(data).GetGraphic(5, MagickColors.Red, MagickColors.Blue);
         pngCodeGfx.ShouldMatchApprovedImage();
     }
 

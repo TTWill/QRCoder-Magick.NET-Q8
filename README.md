@@ -9,17 +9,27 @@
 QRCoder is a simple C# library originally created by [Raffael Herrmann](https://raffaelherrmann.de) for generating QR codes and Micro QR codes.
 
 - 📚 [Documentation & Wiki](https://github.com/Shane32/QRCoder/wiki)
-- 📋 [Release notes / Changelog](https://github.com/Shane32/QRCoder/releases)
+- 📋 [Release notes / Changelog](CHANGELOG.md)
 - 🚀 [Upcoming features](https://github.com/Shane32/QRCoder/milestones)
+
+## Ported to use Magick.NET
+
+This is a fork of [QRCoder](https://github.com/Shane32/QRCoder) that replaces `System.Drawing`
+with [Magick.NET](https://github.com/dlemstra/Magick.NET), and is published on NuGet as
+**`QRCoder-Magick.NET-Q8`**. The assembly and namespace remain `QRCoder`.
+
+This is a **breaking change** relative to upstream: raster renderers return `MagickImage`
+instead of `Bitmap`, and `net35`/`net40`/`netstandard1.3` are no longer supported.
+See [CHANGELOG.md](CHANGELOG.md) for migration details.
 
 ## ✨ Features
 
-- 🚀 **Zero dependencies** - No external libraries required (framework dependencies only)
+- 🌍 **Cross-platform rendering** - Raster output via [Magick.NET](https://github.com/dlemstra/Magick.NET), with no GDI+/Windows-only restrictions
 - ⚡ **Fast performance** - Optimized QR code generation with low memory footprint
 - 🎨 **Multiple output formats** - PNG, SVG, PDF, ASCII, Bitmap, PostScript, and more
 - 📱 **23+ payload generators** - WiFi, vCard, URLs, payments, and many more
 - 🔧 **Highly configurable** - Error correction levels, custom colors, logos, and styling
-- 🌐 **Cross-platform** - Supports .NET 5+, .NET Framework 3.5+, .NET Core 1.0+, and .NET Standard 1.3+
+- 🌐 **Broad framework support** - .NET 5+ (through .NET 10), .NET Standard 2.0/2.1, and .NET Framework 4.7.2+ (including net48)
 - 📦 **Micro QR codes** - Smaller QR codes for space-constrained applications
 
 ## 📦 Installation
@@ -27,8 +37,11 @@ QRCoder is a simple C# library originally created by [Raffael Herrmann](https://
 Install via NuGet Package Manager:
 
 ```bash
-PM> Install-Package QRCoder
+PM> Install-Package QRCoder-Magick.NET-Q8
 ```
+
+The package ID is `QRCoder-Magick.NET-Q8`, but the assembly and namespace remain `QRCoder`,
+so `using QRCoder;` works unchanged.
 
 ## 🚀 Quick Start
 
@@ -109,20 +122,19 @@ QRCoder provides multiple renderers for different output formats and use cases. 
 |----------|---------------|----------|---------------|
 | [**PngByteQRCode**](https://github.com/Shane32/QRCoder/wiki/Advanced-usage---QR-Code-renderers#25-pngbyteqrcode-renderer-in-detail) | PNG byte array | — | `new PngByteQRCode(data).GetGraphic(20)` |
 | [**SvgQRCode**](https://github.com/Shane32/QRCoder/wiki/Advanced-usage---QR-Code-renderers#26-svgqrcode-renderer-in-detail) | SVG string | — | `new SvgQRCode(data).GetGraphic(20)` |
-| [**QRCode**](https://github.com/Shane32/QRCoder/wiki/Advanced-usage---QR-Code-renderers#21-qrcode-renderer-in-detail) | System.Drawing.Bitmap | Windows¹ | `new QRCode(data).GetGraphic(20)` |
-| [**ArtQRCode**](https://github.com/Shane32/QRCoder/wiki/Advanced-usage---QR-Code-renderers#211-artqrcode-renderer-in-detail) | Artistic bitmap with custom images | Windows¹ | `new ArtQRCode(data).GetGraphic(20)` |
+| [**QRCode**](https://github.com/Shane32/QRCoder/wiki/Advanced-usage---QR-Code-renderers#21-qrcode-renderer-in-detail) | `MagickImage` | — | `new QRCode(data).GetGraphic(20)` |
+| [**ArtQRCode**](https://github.com/Shane32/QRCoder/wiki/Advanced-usage---QR-Code-renderers#211-artqrcode-renderer-in-detail) | Artistic `MagickImage` with custom images | — | `new ArtQRCode(data).GetGraphic(20)` |
 | [**AsciiQRCode**](https://github.com/Shane32/QRCoder/wiki/Advanced-usage---QR-Code-renderers#22-asciiqrcode-renderer-in-detail) | ASCII art string | — | `new AsciiQRCode(data).GetGraphic(1)` or `new AsciiQRCode(data).GetGraphicSmall()` |
 | [**Base64QRCode**](https://github.com/Shane32/QRCoder/wiki/Advanced-usage---QR-Code-renderers#23-base64qrcode-renderer-in-detail) | Base64 encoded image | — | `new Base64QRCode(data).GetGraphic(20)` |
 | [**BitmapByteQRCode**](https://github.com/Shane32/QRCoder/wiki/Advanced-usage---QR-Code-renderers#24-bitmapbyteqrcode-renderer-in-detail) | BMP byte array | — | `new BitmapByteQRCode(data).GetGraphic(20)` |
 | [**PdfByteQRCode**](https://github.com/Shane32/QRCoder/wiki/Advanced-usage---QR-Code-renderers#210-pdfbyteqrcode-renderer-in-detail) | PDF byte array | — | `new PdfByteQRCode(data).GetGraphic(20)` |
 | [**PostscriptQRCode**](https://github.com/Shane32/QRCoder/wiki/Advanced-usage---QR-Code-renderers#29-postscriptqrcode-renderer-in-detail) | PostScript/EPS string | — | `new PostscriptQRCode(data).GetGraphic(20)` |
-| [**XamlQRCode**](https://github.com/Shane32/QRCoder/wiki/Advanced-usage---QR-Code-renderers#28-xamlqrcode-renderer-in-detail) | XAML DrawingImage | XAML² | `new XamlQRCode(data).GetGraphic(20)` |
-| [**UnityQRCode**](https://github.com/Shane32/QRCoder/wiki/Advanced-usage---QR-Code-renderers#27-unityqrcode-renderer-in-detail) | Unity Texture2D | Unity³ | `new UnityQRCode(data).GetGraphic(20)` |
+| XAML DrawingImage | XAML¹ | `new XamlQRCode(data).GetGraphic(20)` |
+| Unity Texture2D | Unity² | `new UnityQRCode(data).GetGraphic(20)` |
 
 **Notes:**
-- ¹ Requires Windows or System.Drawing.Common package (uses GDI+)
-- ² Requires the [QRCoder.Xaml](https://www.nuget.org/packages/QRCoder.Xaml) package
-- ³ Requires the [QRCoder.Unity](https://www.nuget.org/packages/QRCoder.Unity) package
+- ¹ Requires the [QRCoder.Xaml](https://www.nuget.org/packages/QRCoder.Xaml) package
+- ² Requires the [QRCoder.Unity](https://www.nuget.org/packages/QRCoder.Unity) package
 
 **Framework Compatibility:** Not all renderers are available on all target frameworks. Check the [compatibility table](https://github.com/Shane32/QRCoder/wiki/Advanced-usage---QR-Code-renderers#2-overview-of-the-different-renderers) for details.
 
@@ -176,24 +188,35 @@ for (int y = 0; y < size; y++)
 
 ## ⚠️ Troubleshooting
 
-### System.Drawing.Common Warnings (QRCode and ArtQRCode renderers)
+### Migrating from System.Drawing (upstream QRCoder)
 
-The `QRCode` and `ArtQRCode` renderers depend on `System.Drawing.Common`, which Microsoft has [removed cross-platform support for in .NET 6+](https://learn.microsoft.com/en-us/dotnet/core/compatibility/core-libraries/6.0/system-drawing-common-windows-only). You may encounter one of the following build or runtime errors:
+This fork replaces `System.Drawing` with [Magick.NET](https://github.com/dlemstra/Magick.NET).
+If you are coming from upstream QRCoder, update raster renderer types as follows:
 
+| Before (`System.Drawing`) | After (Magick.NET)   |
+|---------------------------|----------------------|
+| `Bitmap`                  | `MagickImage`        |
+| `Bitmap` (parameters)     | `IMagickImage<byte>` |
+| `Color`                   | `MagickColor`        |
+| `Size` / `Rectangle`      | `MagickGeometry`     |
+
+```csharp
+using ImageMagick;
+using QRCoder;
+
+using var qrCodeData = QRCodeGenerator.GenerateQrCode("Hello World", QRCodeGenerator.ECCLevel.Q);
+using var qrCode = new QRCode(qrCodeData);
+using MagickImage image = qrCode.GetGraphic(20);
+image.Write("qrcode.png");
 ```
-CA1416: This call site is reachable on all platforms. 'QRCode.QRCode(QRCodeData)' is only supported on: 'windows'
 
-System.TypeInitializationException: The type initializer for 'Gdip' threw an exception.
+`MagickImage` implements `IDisposable`, so dispose it as you would a `Bitmap`.
 
-System.PlatformNotSupportedException: System.Drawing.Common is not supported on this platform.
-```
+As a result of this change, the `CA1416` platform warnings and the
+`PlatformNotSupportedException`/`Gdip` runtime errors that previously affected the `QRCode`
+and `ArtQRCode` renderers no longer occur, and those renderers now work on Linux and macOS.
 
-Solutions include:
-
-1. Use Windows-specific TFMs such as `<TargetFramework>net8.0-windows</TargetFramework>`
-2. Mark methods with the `[SupportedOSPlatform("windows")]` attribute
-3. Add platform guards by wrapping code with `#if WINDOWS` or `if (OperatingSystem.IsWindows())`
-4. Use cross-platform renderers such as `PngByteQRCode`, `SvgQRCode`, or `BitmapByteQRCode`
+See [CHANGELOG.md](CHANGELOG.md) for the full list of breaking changes.
 
 ### ISO-8859-2 Encoding Support (.NET Core and .NET 5+)
 

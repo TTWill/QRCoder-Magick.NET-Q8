@@ -19,7 +19,6 @@ public class TransposeVerificationTests
         _sharedQrCodeData = gen.CreateQrCode("ABCD", QRCodeGenerator.ECCLevel.L);
     }
 
-#if SYSTEM_DRAWING
     [Theory]
     [InlineData("QRCode")]
     [InlineData("BitmapByteQRCode")]
@@ -44,10 +43,8 @@ public class TransposeVerificationTests
     private byte[] GetQRCodeBytes()
     {
         var qrCode = new QRCode(_sharedQrCodeData);
-        using var bitmap = qrCode.GetGraphic(10);
-        using var ms = new MemoryStream();
-        bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
-        return ms.ToArray();
+        using var image = qrCode.GetGraphic(10);
+        return image.ToByteArray(MagickFormat.Png32);
     }
 
     private byte[] GetBitmapByteQRCodeBytes()
@@ -74,22 +71,23 @@ public class TransposeVerificationTests
         var qrCode = new SvgQRCode(_sharedQrCodeData);
         var svgString = qrCode.GetGraphic(10);
         var bitmapSize = _sharedQrCodeData.ModuleMatrix.Count * 10;
-        // use Svg.Net to render SVG to bitmap for comparison
-        var svgDoc = Svg.SvgDocument.FromSvg<Svg.SvgDocument>(svgString);
-        using var bitmap = svgDoc.Draw(bitmapSize, bitmapSize);
-        using var ms = new MemoryStream();
-        bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
-        return ms.ToArray();
+        var readSettings = new MagickReadSettings
+        {
+            Format = MagickFormat.Svg,
+            Width = (uint)bitmapSize,
+            Height = (uint)bitmapSize,
+        };
+        using var image = new MagickImage(Encoding.UTF8.GetBytes(svgString), readSettings);
+        return image.ToByteArray(MagickFormat.Png32);
     }
 
     [Fact]
     public void artqrcode_renderer()
     {
         var qrCode = new ArtQRCode(_sharedQrCodeData);
-        using var bitmap = qrCode.GetGraphic(10, Color.Black, Color.White, Color.White, null, 1, true, ArtQRCode.QuietZoneStyle.Flat, ArtQRCode.BackgroundImageStyle.Fill, null);
+        using var bitmap = qrCode.GetGraphic(10, MagickColors.Black, MagickColors.White, MagickColors.White, null, 1, true, ArtQRCode.QuietZoneStyle.Flat, ArtQRCode.BackgroundImageStyle.Fill, null);
         bitmap.ShouldMatchApproved();
     }
-#endif
 
     [Theory]
     [InlineData("FullSize")]
@@ -146,7 +144,6 @@ public class TransposeVerificationTests
         }
     }
 
-#if SYSTEM_DRAWING
     [Fact]
     public void black_module_reference()
     {
@@ -167,5 +164,4 @@ public class TransposeVerificationTests
         using var bitmap = qrCode.GetGraphic(10);
         bitmap.ShouldMatchApproved();
     }
-#endif
 }

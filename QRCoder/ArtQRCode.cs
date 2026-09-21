@@ -1,19 +1,13 @@
-#if SYSTEM_DRAWING
-
-using System.Drawing;
-using System.Drawing.Drawing2D;
+using ImageMagick;
+using ImageMagick.Drawing;
 using static QRCoder.ArtQRCode;
 using static QRCoder.QRCodeGenerator;
 
-// pull request raised to extend library used. 
 namespace QRCoder;
 
 /// <summary>
 /// Represents an art-style QR code generator that provides functionality to render QR codes with dots as modules.
 /// </summary>
-#if NET6_0_OR_GREATER
-[System.Runtime.Versioning.SupportedOSPlatform("windows")]
-#endif
 public class ArtQRCode : AbstractQRCode, IDisposable
 {
     /// <summary>
@@ -32,17 +26,17 @@ public class ArtQRCode : AbstractQRCode, IDisposable
     /// Renders an art-style QR code with dots as modules. (With default settings: DarkColor=Black, LightColor=White, Background=Transparent, QuietZone=true)
     /// </summary>
     /// <param name="pixelsPerModule">Amount of px each dark/light module of the QR code shall take place in the final QR code image</param>
-    /// <returns>QRCode graphic as bitmap</returns>
-    public Bitmap GetGraphic(int pixelsPerModule)
-        => GetGraphic(pixelsPerModule, Color.Black, Color.White, Color.Transparent);
+    /// <returns>QRCode graphic as <see cref="MagickImage"/></returns>
+    public MagickImage GetGraphic(int pixelsPerModule)
+        => GetGraphic(pixelsPerModule, MagickColors.Black, MagickColors.White, MagickColors.Transparent);
 
     /// <summary>
     /// Renders an art-style QR code with dots as modules and a background image (With default settings: DarkColor=Black, LightColor=White, Background=Transparent, QuietZone=true)
     /// </summary>
-    /// <param name="backgroundImage">A bitmap object that will be used as background picture</param>
-    /// <returns>QRCode graphic as bitmap</returns>
-    public Bitmap GetGraphic(Bitmap? backgroundImage = null)
-        => GetGraphic(10, Color.Black, Color.White, Color.Transparent, backgroundImage: backgroundImage);
+    /// <param name="backgroundImage">An image that will be used as background picture</param>
+    /// <returns>QRCode graphic as <see cref="MagickImage"/></returns>
+    public MagickImage GetGraphic(IMagickImage<byte>? backgroundImage = null)
+        => GetGraphic(10, MagickColors.Black, MagickColors.White, MagickColors.Transparent, backgroundImage: backgroundImage);
 
     /// <summary>
     /// Renders an art-style QR code with dots as modules and various user settings
@@ -51,16 +45,16 @@ public class ArtQRCode : AbstractQRCode, IDisposable
     /// <param name="darkColor">Color of the dark modules</param>
     /// <param name="lightColor">Color of the light modules</param>
     /// <param name="backgroundColor">Color of the background</param>
-    /// <param name="backgroundImage">A bitmap object that will be used as background picture</param>
+    /// <param name="backgroundImage">An image that will be used as background picture</param>
     /// <param name="pixelSizeFactor">Value between 0.0 to 1.0 that defines how big the module dots are. The bigger the value, the less round the dots will be.</param>
     /// <param name="drawQuietZones">If true a white border is drawn around the whole QR Code</param>
     /// <param name="quietZoneRenderingStyle">Style of the quiet zones</param>
     /// <param name="backgroundImageStyle">Style of the background image (if set). Fill=spanning complete graphic; DataAreaOnly=Don't paint background into quietzone</param>
     /// <param name="finderPatternImage">Optional image that should be used instead of the default finder patterns</param>
-    /// <returns>QRCode graphic as bitmap</returns>
-    public Bitmap GetGraphic(int pixelsPerModule, Color darkColor, Color lightColor, Color backgroundColor, Bitmap? backgroundImage = null, double pixelSizeFactor = 1,
-                             bool drawQuietZones = true, QuietZoneStyle quietZoneRenderingStyle = QuietZoneStyle.Dotted,
-                             BackgroundImageStyle backgroundImageStyle = BackgroundImageStyle.DataAreaOnly, Bitmap? finderPatternImage = null)
+    /// <returns>QRCode graphic as <see cref="MagickImage"/></returns>
+    public MagickImage GetGraphic(int pixelsPerModule, MagickColor darkColor, MagickColor lightColor, MagickColor backgroundColor, IMagickImage<byte>? backgroundImage = null, double pixelSizeFactor = 1,
+                                  bool drawQuietZones = true, QuietZoneStyle quietZoneRenderingStyle = QuietZoneStyle.Dotted,
+                                  BackgroundImageStyle backgroundImageStyle = BackgroundImageStyle.DataAreaOnly, IMagickImage<byte>? finderPatternImage = null)
     {
         if (pixelSizeFactor > 1)
             throw new ArgumentOutOfRangeException(nameof(pixelSizeFactor), "The parameter pixelSizeFactor must be between 0 and 1. (0-100%)");
@@ -70,65 +64,80 @@ public class ArtQRCode : AbstractQRCode, IDisposable
         var offset = (drawQuietZones ? 0 : 4);
         var size = numModules * pixelsPerModule;
 
-        var bitmap = new Bitmap(size, size);
-
-        using (var graphics = Graphics.FromImage(bitmap))
+        // Start with the background color
+        var image = new MagickImage(backgroundColor, (uint)size, (uint)size)
         {
-            using var lightBrush = new SolidBrush(lightColor);
-            using var darkBrush = new SolidBrush(darkColor);
-            // make background transparent
-            using (var brush = new SolidBrush(backgroundColor))
-                graphics.FillRectangle(brush, new Rectangle(0, 0, size, size));
-            //Render background if set
-            if (backgroundImage != null)
+            Format = MagickFormat.Png32
+        };
+
+        //Render background if set
+        if (backgroundImage != null)
+        {
+            if (backgroundImageStyle == BackgroundImageStyle.Fill)
             {
-                if (backgroundImageStyle == BackgroundImageStyle.Fill)
-                {
-                    using var resizedBg = Resize(backgroundImage, size);
-                    graphics.DrawImage(resizedBg, 0, 0);
-                }
-                else if (backgroundImageStyle == BackgroundImageStyle.DataAreaOnly)
-                {
-                    var bgOffset = 4 - offset;
-                    using var resizedBg = Resize(backgroundImage, size - (2 * bgOffset * pixelsPerModule));
-                    graphics.DrawImage(resizedBg, 0 + (bgOffset * pixelsPerModule), (bgOffset * pixelsPerModule));
-                }
+                using var resizedBg = Resize(backgroundImage, size);
+                image.Composite(resizedBg, 0, 0, CompositeOperator.Over);
             }
-
-
-            using var darkModulePixel = MakeDotPixel(pixelsPerModule, pixelSize, darkBrush);
-            using var lightModulePixel = MakeDotPixel(pixelsPerModule, pixelSize, lightBrush);
-
-            for (var x = 0; x < numModules; x += 1)
+            else if (backgroundImageStyle == BackgroundImageStyle.DataAreaOnly)
             {
-                for (var y = 0; y < numModules; y += 1)
-                {
-                    var rectangleF = new Rectangle(x * pixelsPerModule, y * pixelsPerModule, pixelsPerModule, pixelsPerModule);
-
-                    var pixelIsDark = QrCodeData.ModuleMatrix[offset + y][offset + x];
-                    var solidBrush = pixelIsDark ? darkBrush : lightBrush;
-                    var pixelImage = pixelIsDark ? darkModulePixel : lightModulePixel;
-
-                    if (!IsPartOfFinderPattern(x, y, numModules, offset))
-                        if (drawQuietZones && quietZoneRenderingStyle == QuietZoneStyle.Flat && IsPartOfQuietZone(x, y, numModules))
-                            graphics.FillRectangle(solidBrush, rectangleF);
-                        else
-                            graphics.DrawImage(pixelImage, rectangleF);
-                    else if (finderPatternImage == null)
-                        graphics.FillRectangle(solidBrush, rectangleF);
-                }
+                var bgOffset = 4 - offset;
+                using var resizedBg = Resize(backgroundImage, size - (2 * bgOffset * pixelsPerModule));
+                image.Composite(resizedBg, bgOffset * pixelsPerModule, bgOffset * pixelsPerModule, CompositeOperator.Over);
             }
-            if (finderPatternImage != null)
-            {
-                var finderPatternSize = 7 * pixelsPerModule;
-                var finderPatternOffset = drawQuietZones ? 4 * pixelsPerModule : 0;
-                graphics.DrawImage(finderPatternImage, new Rectangle(finderPatternOffset, finderPatternOffset, finderPatternSize, finderPatternSize));
-                graphics.DrawImage(finderPatternImage, new Rectangle(size - finderPatternOffset - finderPatternSize, finderPatternOffset, finderPatternSize, finderPatternSize));
-                graphics.DrawImage(finderPatternImage, new Rectangle(finderPatternOffset, size - finderPatternOffset - finderPatternSize, finderPatternSize, finderPatternSize));
-            }
-            graphics.Save();
         }
-        return bitmap;
+
+        using var darkModulePixel = MakeDotPixel(pixelsPerModule, pixelSize, darkColor);
+        using var lightModulePixel = MakeDotPixel(pixelsPerModule, pixelSize, lightColor);
+
+        IDrawables<byte> flatDrawables = new Drawables().StrokeWidth(0).StrokeColor(MagickColors.Transparent);
+        var hasFlatDrawables = false;
+
+        for (var x = 0; x < numModules; x += 1)
+        {
+            for (var y = 0; y < numModules; y += 1)
+            {
+                var moduleX = x * pixelsPerModule;
+                var moduleY = y * pixelsPerModule;
+
+                var pixelIsDark = QrCodeData.ModuleMatrix[offset + y][offset + x];
+                var moduleColor = pixelIsDark ? darkColor : lightColor;
+                var pixelImage = pixelIsDark ? darkModulePixel : lightModulePixel;
+
+                if (!IsPartOfFinderPattern(x, y, numModules, offset))
+                {
+                    if (drawQuietZones && quietZoneRenderingStyle == QuietZoneStyle.Flat && IsPartOfQuietZone(x, y, numModules))
+                    {
+                        flatDrawables.FillColor(moduleColor).Rectangle(moduleX, moduleY, moduleX + pixelsPerModule - 1, moduleY + pixelsPerModule - 1);
+                        hasFlatDrawables = true;
+                    }
+                    else
+                    {
+                        image.Composite(pixelImage, moduleX, moduleY, CompositeOperator.Over);
+                    }
+                }
+                else if (finderPatternImage == null)
+                {
+                    flatDrawables.FillColor(moduleColor).Rectangle(moduleX, moduleY, moduleX + pixelsPerModule - 1, moduleY + pixelsPerModule - 1);
+                    hasFlatDrawables = true;
+                }
+            }
+        }
+
+        if (hasFlatDrawables)
+            flatDrawables.Draw(image);
+
+        if (finderPatternImage != null)
+        {
+            var finderPatternSize = 7 * pixelsPerModule;
+            var finderPatternOffset = drawQuietZones ? 4 * pixelsPerModule : 0;
+            using var resizedFinderPattern = finderPatternImage.Clone();
+            resizedFinderPattern.Resize(new MagickGeometry((uint)finderPatternSize, (uint)finderPatternSize) { IgnoreAspectRatio = true });
+            image.Composite(resizedFinderPattern, finderPatternOffset, finderPatternOffset, CompositeOperator.Over);
+            image.Composite(resizedFinderPattern, size - finderPatternOffset - finderPatternSize, finderPatternOffset, CompositeOperator.Over);
+            image.Composite(resizedFinderPattern, finderPatternOffset, size - finderPatternOffset - finderPatternSize, CompositeOperator.Over);
+        }
+
+        return image;
     }
 
     /// <summary>
@@ -136,34 +145,32 @@ public class ArtQRCode : AbstractQRCode, IDisposable
     /// </summary>
     /// <param name="pixelsPerModule">Pixels used per module rendered</param>
     /// <param name="pixelSize">Size of the dots</param>
-    /// <param name="brush">Color of the pixels</param>
-    /// <returns></returns>
-    private static Bitmap MakeDotPixel(int pixelsPerModule, int pixelSize, SolidBrush brush)
+    /// <param name="color">Color of the pixels</param>
+    /// <returns>A single module tile containing a centered dot</returns>
+    private static MagickImage MakeDotPixel(int pixelsPerModule, int pixelSize, MagickColor color)
     {
-        // draw a dot
-        using var bitmap = new Bitmap(pixelSize, pixelSize);
-        using (var graphics = Graphics.FromImage(bitmap))
-        {
-            graphics.FillEllipse(brush, new Rectangle(0, 0, pixelSize, pixelSize));
-            graphics.Save();
-        }
-
         var pixelWidth = Math.Min(pixelsPerModule, pixelSize);
         var margin = Math.Max((pixelsPerModule - pixelWidth) / 2, 0);
 
-        // center the dot in the module and crop to stay the right size.
-        var cropped = new Bitmap(pixelsPerModule, pixelsPerModule);
-        using (var graphics = Graphics.FromImage(cropped))
+        // Center the dot within a transparent module-sized tile.
+        var tile = new MagickImage(MagickColors.Transparent, (uint)pixelsPerModule, (uint)pixelsPerModule)
         {
-            graphics.DrawImage(bitmap, new Rectangle(margin, margin, pixelWidth, pixelWidth),
-                new RectangleF(((float)pixelSize - pixelWidth) / 2, ((float)pixelSize - pixelWidth) / 2, pixelWidth, pixelWidth),
-                GraphicsUnit.Pixel);
-            graphics.Save();
-        }
+            Format = MagickFormat.Png32
+        };
 
-        return cropped;
+        var radius = pixelWidth / 2d;
+        var centerX = margin + radius;
+        var centerY = margin + radius;
+
+        new Drawables()
+            .StrokeWidth(0)
+            .StrokeColor(MagickColors.Transparent)
+            .FillColor(color)
+            .Ellipse(centerX, centerY, radius, radius, 0, 360)
+            .Draw(tile);
+
+        return tile;
     }
-
 
     /// <summary>
     /// Checks if a given module(-position) is part of the quietzone of a QR code
@@ -180,7 +187,6 @@ public class ArtQRCode : AbstractQRCode, IDisposable
             x > numModules - 5 || //right
             y > numModules - 5; //bottom                
     }
-
 
     /// <summary>
     /// Checks if a given module(-position) is part of one of the three finder patterns of a QR code
@@ -203,35 +209,22 @@ public class ArtQRCode : AbstractQRCode, IDisposable
     }
 
     /// <summary>
-    /// Resize to a square bitmap, but maintain the aspect ratio by padding transparently.
+    /// Resize to a square image, but maintain the aspect ratio by padding transparently.
     /// </summary>
-    /// <param name="image"></param>
-    /// <param name="newSize"></param>
-    /// <returns>Resized image as bitmap</returns>
-    private static Bitmap Resize(Bitmap image, int newSize)
+    /// <param name="image">The image to resize</param>
+    /// <param name="newSize">The edge length of the resulting square image</param>
+    /// <returns>Resized image</returns>
+    private static MagickImage Resize(IMagickImage<byte> image, int newSize)
     {
-        float scale = Math.Min((float)newSize / image.Width, (float)newSize / image.Height);
-        var scaledWidth = (int)(image.Width * scale);
-        var scaledHeight = (int)(image.Height * scale);
-        var offsetX = (newSize - scaledWidth) / 2;
-        var offsetY = (newSize - scaledHeight) / 2;
+        var resized = (MagickImage)image.Clone();
+        resized.Format = MagickFormat.Png32;
+        resized.BackgroundColor = MagickColors.Transparent;
 
-        using var scaledImage = new Bitmap(image, new Size(scaledWidth, scaledHeight));
+        // Resize preserving aspect ratio, then pad transparently to a square.
+        resized.Resize(new MagickGeometry((uint)newSize, (uint)newSize));
+        resized.Extent(new MagickGeometry((uint)newSize, (uint)newSize), Gravity.Center, MagickColors.Transparent);
 
-        var bm = new Bitmap(newSize, newSize);
-
-        using (var graphics = Graphics.FromImage(bm))
-        {
-            using var brush = new SolidBrush(Color.Transparent);
-            graphics.FillRectangle(brush, new Rectangle(0, 0, newSize, newSize));
-
-            graphics.InterpolationMode = InterpolationMode.High;
-            graphics.CompositingQuality = CompositingQuality.HighQuality;
-            graphics.SmoothingMode = SmoothingMode.AntiAlias;
-
-            graphics.DrawImage(scaledImage, new Rectangle(offsetX, offsetY, scaledWidth, scaledHeight));
-        }
-        return bm;
+        return resized;
     }
 
     /// <summary>
@@ -270,9 +263,6 @@ public class ArtQRCode : AbstractQRCode, IDisposable
 /// <summary>
 /// Provides static methods for creating art-style QR codes.
 /// </summary>
-#if NET6_0_OR_GREATER
-[System.Runtime.Versioning.SupportedOSPlatform("windows")]
-#endif
 public static class ArtQRCodeHelper
 {
     /// <summary>
@@ -288,17 +278,17 @@ public static class ArtQRCodeHelper
     /// <param name="utf8BOM">Should the byte-order-mark be used?</param>
     /// <param name="eciMode">Which ECI mode shall be used?</param>
     /// <param name="requestedVersion">Set fixed QR code target version.</param>
-    /// <param name="backgroundImage">A bitmap object that will be used as background picture</param>
+    /// <param name="backgroundImage">An image that will be used as background picture</param>
     /// <param name="pixelSizeFactor">Value between 0.0 to 1.0 that defines how big the module dots are. The bigger the value, the less round the dots will be.</param>
     /// <param name="drawQuietZones">If true a white border is drawn around the whole QR Code</param>
     /// <param name="quietZoneRenderingStyle">Style of the quiet zones</param>
     /// <param name="backgroundImageStyle">Style of the background image (if set). Fill=spanning complete graphic; DataAreaOnly=Don't paint background into quietzone</param>
     /// <param name="finderPatternImage">Optional image that should be used instead of the default finder patterns</param>
-    /// <returns>QRCode graphic as bitmap</returns>
-    public static Bitmap GetQRCode(string plainText, int pixelsPerModule, Color darkColor, Color lightColor, Color backgroundColor, ECCLevel eccLevel, bool forceUtf8 = false,
-                                   bool utf8BOM = false, EciMode eciMode = EciMode.Default, int requestedVersion = -1, Bitmap? backgroundImage = null, double pixelSizeFactor = 1.0,
-                                   bool drawQuietZones = true, QuietZoneStyle quietZoneRenderingStyle = QuietZoneStyle.Flat,
-                                   BackgroundImageStyle backgroundImageStyle = BackgroundImageStyle.DataAreaOnly, Bitmap? finderPatternImage = null)
+    /// <returns>QRCode graphic as <see cref="MagickImage"/></returns>
+    public static MagickImage GetQRCode(string plainText, int pixelsPerModule, MagickColor darkColor, MagickColor lightColor, MagickColor backgroundColor, ECCLevel eccLevel, bool forceUtf8 = false,
+                                        bool utf8BOM = false, EciMode eciMode = EciMode.Default, int requestedVersion = -1, IMagickImage<byte>? backgroundImage = null, double pixelSizeFactor = 1.0,
+                                        bool drawQuietZones = true, QuietZoneStyle quietZoneRenderingStyle = QuietZoneStyle.Flat,
+                                        BackgroundImageStyle backgroundImageStyle = BackgroundImageStyle.DataAreaOnly, IMagickImage<byte>? finderPatternImage = null)
     {
         using var qrGenerator = new QRCodeGenerator();
         using var qrCodeData = qrGenerator.CreateQrCode(plainText, eccLevel, forceUtf8, utf8BOM, eciMode, requestedVersion);
@@ -306,5 +296,3 @@ public static class ArtQRCodeHelper
         return qrCode.GetGraphic(pixelsPerModule, darkColor, lightColor, backgroundColor, backgroundImage, pixelSizeFactor, drawQuietZones, quietZoneRenderingStyle, backgroundImageStyle, finderPatternImage);
     }
 }
-
-#endif

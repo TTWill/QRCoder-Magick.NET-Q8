@@ -1,7 +1,4 @@
-#if !NETSTANDARD1_3
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Runtime.InteropServices;
+using ImageMagick;
 using static QRCoder.Base64QRCode;
 using static QRCoder.QRCodeGenerator;
 
@@ -34,7 +31,7 @@ public class Base64QRCode : AbstractQRCode, IDisposable
     /// <param name="pixelsPerModule">The number of pixels each dark/light module of the QR code will occupy in the final QR code image.</param>
     /// <returns>Returns the QR code graphic as a base64-encoded string.</returns>
     public string GetGraphic(int pixelsPerModule)
-        => GetGraphic(pixelsPerModule, Color.Black, Color.White, true);
+        => GetGraphic(pixelsPerModule, MagickColors.Black, MagickColors.White, true);
 
     /// <summary>
     /// Returns a base64-encoded string that contains the resulting QR code as an image.
@@ -46,7 +43,7 @@ public class Base64QRCode : AbstractQRCode, IDisposable
     /// <param name="imgType">The type of image to generate (PNG, JPEG, GIF).</param>
     /// <returns>Returns the QR code graphic as a base64-encoded string.</returns>
     public string GetGraphic(int pixelsPerModule, string darkColorHtmlHex, string lightColorHtmlHex, bool drawQuietZones = true, ImageType imgType = ImageType.Png)
-        => GetGraphic(pixelsPerModule, ColorTranslator.FromHtml(darkColorHtmlHex), ColorTranslator.FromHtml(lightColorHtmlHex), drawQuietZones, imgType);
+        => GetGraphic(pixelsPerModule, new MagickColor(darkColorHtmlHex), new MagickColor(lightColorHtmlHex), drawQuietZones, imgType);
 
     /// <summary>
     /// Returns a base64-encoded string that contains the resulting QR code as an image.
@@ -57,14 +54,14 @@ public class Base64QRCode : AbstractQRCode, IDisposable
     /// <param name="drawQuietZones">Indicates if quiet zones around the QR code should be drawn.</param>
     /// <param name="imgType">The type of image to generate (PNG, JPEG, GIF).</param>
     /// <returns>Returns the QR code graphic as a base64-encoded string.</returns>
-    public string GetGraphic(int pixelsPerModule, Color darkColor, Color lightColor, bool drawQuietZones = true, ImageType imgType = ImageType.Png)
+    public string GetGraphic(int pixelsPerModule, MagickColor darkColor, MagickColor lightColor, bool drawQuietZones = true, ImageType imgType = ImageType.Png)
     {
         if (imgType == ImageType.Png)
         {
             var pngCoder = new PngByteQRCode(QrCodeData);
 
             byte[] pngData;
-            if (darkColor == Color.Black && lightColor == Color.White)
+            if (darkColor == MagickColors.Black && lightColor == MagickColors.White)
             {
                 pngData = pngCoder.GetGraphic(pixelsPerModule, drawQuietZones);
             }
@@ -88,22 +85,11 @@ public class Base64QRCode : AbstractQRCode, IDisposable
             return Convert.ToBase64String(pngData, Base64FormattingOptions.None);
         }
 
-#if SYSTEM_DRAWING
-#pragma warning disable CA1416 // Validate platform compatibility
         var qr = new QRCode(QrCodeData);
-        var base64 = string.Empty;
-        using (var bmp = qr.GetGraphic(pixelsPerModule, darkColor, lightColor, drawQuietZones))
-        {
-            base64 = BitmapToBase64(bmp, imgType);
-        }
-        return base64;
-#pragma warning restore CA1416 // Validate platform compatibility
-#else
-        throw new PlatformNotSupportedException("Only the PNG image type is supported on this platform.");
-#endif
+        using var image = qr.GetGraphic(pixelsPerModule, darkColor, lightColor, drawQuietZones);
+        return ImageToBase64(image, imgType);
     }
 
-#if SYSTEM_DRAWING
     /// <summary>
     /// Returns a base64-encoded string that contains the resulting QR code as an image with an embedded icon.
     /// </summary>
@@ -116,45 +102,30 @@ public class Base64QRCode : AbstractQRCode, IDisposable
     /// <param name="drawQuietZones">Indicates if quiet zones around the QR code should be drawn.</param>
     /// <param name="imgType">The type of image to generate (PNG, JPEG, GIF).</param>
     /// <returns>Returns the QR code graphic as a base64-encoded string.</returns>
-#if NET6_0_OR_GREATER
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-#endif
-    public string GetGraphic(int pixelsPerModule, Color darkColor, Color lightColor, Bitmap icon, int iconSizePercent = 15, int iconBorderWidth = 6, bool drawQuietZones = true, ImageType imgType = ImageType.Png)
+    public string GetGraphic(int pixelsPerModule, MagickColor darkColor, MagickColor lightColor, IMagickImage<byte> icon, int iconSizePercent = 15, int iconBorderWidth = 6, bool drawQuietZones = true, ImageType imgType = ImageType.Png)
     {
         var qr = new QRCode(QrCodeData);
-        var base64 = string.Empty;
-        using (var bmp = qr.GetGraphic(pixelsPerModule, darkColor, lightColor, icon, iconSizePercent, iconBorderWidth, drawQuietZones))
-        {
-            base64 = BitmapToBase64(bmp, imgType);
-        }
-        return base64;
+        using var image = qr.GetGraphic(pixelsPerModule, darkColor, lightColor, icon, iconSizePercent, iconBorderWidth, drawQuietZones);
+        return ImageToBase64(image, imgType);
     }
-#endif
 
-#if SYSTEM_DRAWING
     /// <summary>
-    /// Converts a bitmap to a base64-encoded string.
+    /// Converts an image to a base64-encoded string.
     /// </summary>
-    /// <param name="bmp">The bitmap to convert.</param>
+    /// <param name="image">The image to convert.</param>
     /// <param name="imgType">The type of image (PNG, JPEG, GIF).</param>
-    /// <returns>Returns the base64-encoded string representation of the bitmap.</returns>
-#if NET6_0_OR_GREATER
-    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-#endif
-    private static string BitmapToBase64(Bitmap bmp, ImageType imgType)
+    /// <returns>Returns the base64-encoded string representation of the image.</returns>
+    private static string ImageToBase64(MagickImage image, ImageType imgType)
     {
-        var iFormat = imgType switch
+        var format = imgType switch
         {
-            ImageType.Png => ImageFormat.Png,
-            ImageType.Jpeg => ImageFormat.Jpeg,
-            ImageType.Gif => ImageFormat.Gif,
-            _ => ImageFormat.Png,
+            ImageType.Png => MagickFormat.Png32,
+            ImageType.Jpeg => MagickFormat.Jpeg,
+            ImageType.Gif => MagickFormat.Gif,
+            _ => MagickFormat.Png32,
         };
-        using var memoryStream = new MemoryStream();
-        bmp.Save(memoryStream, iFormat);
-        return Convert.ToBase64String(memoryStream.ToArray(), Base64FormattingOptions.None);
+        return Convert.ToBase64String(image.ToByteArray(format), Base64FormattingOptions.None);
     }
-#endif
 
     /// <summary>
     /// Specifies the type of image to generate.
@@ -164,16 +135,10 @@ public class Base64QRCode : AbstractQRCode, IDisposable
         /// <summary>
         /// Graphics Interchange Format (GIF) image format, a bitmap image format with limited color support
         /// </summary>
-#if NET6_0_OR_GREATER
-        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-#endif
         Gif,
         /// <summary>
         /// Joint Photographic Experts Group (JPEG) image format, a lossy compressed image format
         /// </summary>
-#if NET6_0_OR_GREATER
-        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-#endif
         Jpeg,
         /// <summary>
         /// Portable Network Graphics (PNG) image format, a lossless raster graphics format
@@ -211,5 +176,3 @@ public static class Base64QRCodeHelper
         return qrCode.GetGraphic(pixelsPerModule, darkColorHtmlHex, lightColorHtmlHex, drawQuietZones, imgType);
     }
 }
-
-#endif

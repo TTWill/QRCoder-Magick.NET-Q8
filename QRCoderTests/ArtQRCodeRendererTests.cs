@@ -1,5 +1,3 @@
-#if SYSTEM_DRAWING
-
 namespace QRCoderTests;
 
 public class ArtQRCodeRendererTests
@@ -18,12 +16,8 @@ public class ArtQRCodeRendererTests
     {
         var gen = new QRCodeGenerator();
         var data = gen.CreateQrCode("This is a quick test! 123#?", QRCodeGenerator.ECCLevel.H);
-        var finder = new Bitmap(70, 70);
-        using (var g = Graphics.FromImage(finder))
-        {
-            g.FillRectangle(Brushes.Red, 0, 0, 70, 70);
-        }
-        var bmp = new ArtQRCode(data).GetGraphic(10, Color.Black, Color.White, Color.Transparent, finderPatternImage: finder);
+        var finder = new MagickImage(MagickColors.Red, 70, 70);
+        var bmp = new ArtQRCode(data).GetGraphic(10, MagickColors.Black, MagickColors.White, MagickColors.Transparent, finderPatternImage: finder);
         bmp.ShouldMatchApproved();
     }
 
@@ -32,7 +26,7 @@ public class ArtQRCodeRendererTests
     {
         var gen = new QRCodeGenerator();
         var data = gen.CreateQrCode("This is a quick test! 123#?", QRCodeGenerator.ECCLevel.H);
-        var bmp = new ArtQRCode(data).GetGraphic(10, Color.Black, Color.White, Color.Transparent, drawQuietZones: false);
+        var bmp = new ArtQRCode(data).GetGraphic(10, MagickColors.Black, MagickColors.White, MagickColors.Transparent, drawQuietZones: false);
         bmp.ShouldMatchApproved();
     }
 
@@ -53,7 +47,7 @@ public class ArtQRCodeRendererTests
         var data = gen.CreateQrCode("This is a quick test! 123#?", QRCodeGenerator.ECCLevel.H);
         var aCode = new ArtQRCode(data);
 
-        var exception = Should.Throw<ArgumentOutOfRangeException>(() => aCode.GetGraphic(10, Color.Black, Color.White, Color.Transparent, pixelSizeFactor: 2));
+        var exception = Should.Throw<ArgumentOutOfRangeException>(() => aCode.GetGraphic(10, MagickColors.Black, MagickColors.White, MagickColors.Transparent, pixelSizeFactor: 2));
         exception.Message.ShouldStartWith("The parameter pixelSizeFactor must be between 0 and 1. (0-100%)");
     }
 
@@ -69,8 +63,7 @@ public class ArtQRCodeRendererTests
     public void can_render_artqrcode_from_helper()
     {
         //Create QR code
-        var bmp = ArtQRCodeHelper.GetQRCode("A", 10, Color.Black, Color.White, Color.Transparent, QRCodeGenerator.ECCLevel.L);
+        var bmp = ArtQRCodeHelper.GetQRCode("A", 10, MagickColors.Black, MagickColors.White, MagickColors.Transparent, QRCodeGenerator.ECCLevel.L);
         bmp.ShouldMatchApproved();
     }
 }
-#endif

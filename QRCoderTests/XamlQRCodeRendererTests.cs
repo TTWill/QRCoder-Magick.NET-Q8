@@ -30,7 +30,7 @@ public class XamlQRCodeRendererTests
     public void can_render_qrcode_from_helper()
     {
         //Create QR code                   
-        var bmp = QRCodeHelper.GetQRCode("This is a quick test! 123#?", 10, Color.Black, Color.White, QRCodeGenerator.ECCLevel.H);
+        var bmp = QRCodeHelper.GetQRCode("This is a quick test! 123#?", 10, MagickColors.Black, MagickColors.White, QRCodeGenerator.ECCLevel.H);
 
         var result = HelperFunctions.BitmapToHash(bmp);
         result.ShouldBe("e8c61b8f0455924fe08ba68686d0d296");

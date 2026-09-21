@@ -22,11 +22,9 @@ jobs:
       uses: actions/setup-dotnet@v5
       with:
         dotnet-version: |
-          2.1.x
-          3.1.x
-          5.0.x
-          6.0.x
           8.0.x
+          9.0.x
+          10.0.x
 
     - name: Run tests
       working-directory: QRCoderTests
@@ -55,7 +53,10 @@ jobs:
     - name: Install .NET SDK
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: |
+          8.0.x
+          9.0.x
+          10.0.x
 
     - name: Run trim analysis
       working-directory: QRCoderTrimAnalysis
@@ -78,7 +79,10 @@ jobs:
     - name: Install .NET SDK
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: |
+          8.0.x
+          9.0.x
+          10.0.x
         source-url: https://nuget.pkg.github.com/Shane32/index.json
       env:
         NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}

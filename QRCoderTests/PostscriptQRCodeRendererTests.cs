@@ -28,7 +28,7 @@ public class PostscriptQRCodeRendererTests
         //Create QR code
         var gen = new QRCodeGenerator();
         var data = gen.CreateQrCode("This is a quick test! 123#?", QRCodeGenerator.ECCLevel.L);
-        var ps = new PostscriptQRCode(data).GetGraphic(new Size(33, 33));
+        var ps = new PostscriptQRCode(data).GetGraphic(new MagickGeometry((uint)33, (uint)33));
         ps.ShouldMatchApproved(x => x.NoDiff());
     }
 
@@ -38,7 +38,7 @@ public class PostscriptQRCodeRendererTests
         //Create QR code
         var gen = new QRCodeGenerator();
         var data = gen.CreateQrCode("This is a quick test! 123#?", QRCodeGenerator.ECCLevel.L);
-        var ps = new PostscriptQRCode(data).GetGraphic(new Size(50, 50), false);
+        var ps = new PostscriptQRCode(data).GetGraphic(new MagickGeometry((uint)50, (uint)50), false);
         ps.ShouldMatchApproved(x => x.NoDiff());
     }
 
@@ -48,7 +48,7 @@ public class PostscriptQRCodeRendererTests
         //Create QR code
         var gen = new QRCodeGenerator();
         var data = gen.CreateQrCode("This is a quick test! 123#?", QRCodeGenerator.ECCLevel.L);
-        var ps = new PostscriptQRCode(data).GetGraphic(5, Color.Red, Color.Blue);
+        var ps = new PostscriptQRCode(data).GetGraphic(5, MagickColors.Red, MagickColors.Blue);
         ps.ShouldMatchApproved(x => x.NoDiff());
     }
 }

@@ -2,7 +2,7 @@ namespace QRCoder;
 
 /// <summary>
 /// Abstract base class for generating QR codes. 
-/// Derived classes typically render a QR code into a specific format (png, System.Drawing.Bitmap, PDF, etc).
+/// Derived classes typically render a QR code into a specific format (png, MagickImage, PDF, etc).
 /// </summary>
 public abstract class AbstractQRCode
 {

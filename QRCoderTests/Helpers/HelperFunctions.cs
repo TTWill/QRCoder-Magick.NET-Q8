@@ -8,6 +8,7 @@ using System.Windows.Media.Imaging;
 #endif
 
 namespace QRCoderTests.Helpers;
+
 public static class HelperFunctions
 {
 
@@ -24,15 +25,15 @@ public static class HelperFunctions
         return bmp;
     }
 
-    public static Bitmap BitmapSourceToBitmap(DrawingImage xamlImg)
+    public static MagickImage BitmapSourceToBitmap(DrawingImage xamlImg)
     {
         using var ms = new MemoryStream();
         var encoder = new PngBitmapEncoder();
         encoder.Frames.Add(BitmapFrame.Create(ToBitmapSource(xamlImg)));
         encoder.Save(ms);
 
-        using var bmp = new Bitmap(ms);
-        return new Bitmap(bmp);
+        ms.Position = 0;
+        return new MagickImage(ms);
     }
 #endif
 
@@ -44,14 +45,14 @@ public static class HelperFunctions
 #endif
 
     /// <summary>
-    /// Gets the embedded PNG icon as a Bitmap.
+    /// Gets the embedded PNG icon as a MagickImage.
     /// </summary>
-    public static Bitmap GetIconBitmap()
+    public static MagickImage GetIconBitmap()
     {
         var assembly = Assembly.GetExecutingAssembly();
         var resourceName = "QRCoderTests.assets.noun_software engineer_2909346.png";
         using var stream = assembly.GetManifestResourceStream(resourceName) ?? throw new InvalidOperationException($"Embedded resource '{resourceName}' not found.");
-        return new Bitmap(stream);
+        return new MagickImage(stream);
     }
 
     /// <summary>

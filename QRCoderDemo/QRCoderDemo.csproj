@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>net462;net5.0-windows</TargetFrameworks>
@@ -6,6 +6,7 @@
     <OutputType>Exe</OutputType>
     <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
     <NeutralLanguage>en-us</NeutralLanguage>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net462'">
