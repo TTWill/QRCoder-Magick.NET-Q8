@@ -133,6 +133,12 @@ publish/
 ## TODO: If you have NuGet Package Restore enabled, uncomment the next line
 packages/
 
+# Local pack output (packages are built and published by CI)
+*.nupkg
+*.snupkg
+artifacts/
+out/
+
 # Windows Azure Build Output
 csx
 *.build.csdef
