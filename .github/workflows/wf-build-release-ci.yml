@@ -69,7 +69,7 @@ jobs:
       working-directory: QRCoderApiTests
       run: dotnet test -c Release --nologo
 
-  pack-push-ci:
+  pack-ci:
     needs: [test, additional-tests]
     runs-on: windows-latest
     steps:
@@ -83,19 +83,15 @@ jobs:
           8.0.x
           9.0.x
           10.0.x
-        source-url: https://nuget.pkg.github.com/Shane32/index.json
-      env:
-        NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
     - name: Build NuGet packages
       shell: bash
       run: dotnet pack -c Release -p:VersionSuffix=$GITHUB_RUN_NUMBER -o out
 
+    # Packages are built here only to validate that packing succeeds. Publishing to
+    # NuGet.org happens exclusively from wf-build-release.yml when a release is published.
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
         name: Nuget packages
         path: out/*
-
-    - name: Publish packages to Github packages
-      run: dotnet nuget push "out\*" -k ${{secrets.GITHUB_TOKEN}}
