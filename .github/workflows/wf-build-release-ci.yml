@@ -39,28 +39,32 @@ jobs:
         overwrite: true
 
     - name: Upload to Codecov
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v5
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        fail_ci_if_error: true
+        # Coverage reporting must not block CI (or the dependent pack job) when the
+        # Codecov upload fails for reasons unrelated to the code under test.
+        fail_ci_if_error: false
 
   additional-tests:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       name: Checkout Code
 
     - name: Install .NET SDK
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: |
           8.0.x
           9.0.x
           10.0.x
 
+    # QRCoderTrimAnalysis multi-targets, and 'dotnet publish' requires an explicit
+    # framework when more than one is targeted.
     - name: Run trim analysis
       working-directory: QRCoderTrimAnalysis
-      run: dotnet publish -c Release -o bin/publish
+      run: dotnet publish -c Release -f net8.0 -o bin/publish/net8.0
 
     - name: Build solution
       run: dotnet build -c Release

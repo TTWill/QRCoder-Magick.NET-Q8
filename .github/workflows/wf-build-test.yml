@@ -26,7 +26,7 @@ jobs:
       uses: actions/checkout@v5
 
     - name: Install .NET SDK ${{ matrix.dotnet-framework.sdk }}
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: |
           ${{ matrix.dotnet-framework.sdk }}
@@ -45,16 +45,18 @@ jobs:
       uses: actions/checkout@v5
 
     - name: Install .NET SDK
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: |
           8.0.x
           9.0.x
           10.0.x
 
+    # QRCoderTrimAnalysis multi-targets, and 'dotnet publish' requires an explicit
+    # framework when more than one is targeted.
     - name: Run trim analysis
       working-directory: QRCoderTrimAnalysis
-      run: dotnet publish -c Release -o bin/publish
+      run: dotnet publish -c Release -f net8.0 -o bin/publish/net8.0
 
     - name: Build solution
       run: dotnet build -c Release
