@@ -1,5 +1,7 @@
 # QRCoder
 
+(Note: Beta release)
+
 [![License](https://img.shields.io/github/license/Shane32/QRCoder)](LICENSE.txt)
 [![NuGet](https://img.shields.io/nuget/v/QRCoder)](https://www.nuget.org/packages/QRCoder/)
 [![Nuget](https://img.shields.io/nuget/dt/QRCoder)](https://www.nuget.org/packages/QRCoder)
