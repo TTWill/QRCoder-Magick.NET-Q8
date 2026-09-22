@@ -46,8 +46,7 @@ jobs:
         files: QRCoderTests/coverage.net8.0-windows.opencover.xml,QRCoderTests/coverage.net9.0-windows.opencover.xml,QRCoderTests/coverage.net10.0-windows.opencover.xml
         # Coverage reporting must not block CI (or the dependent pack job) when the
         # Codecov upload fails for reasons unrelated to the code under test.
-        # Flip to true once CODECOV_TOKEN is configured and an upload has succeeded.
-        fail_ci_if_error: false
+        fail_ci_if_error: true
 
   additional-tests:
     runs-on: windows-latest
