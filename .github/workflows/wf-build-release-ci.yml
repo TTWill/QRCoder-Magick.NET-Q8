@@ -44,8 +44,8 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
         slug: TTWill/QRCoder-Magick.NET-Q8
         files: QRCoderTests/coverage.net8.0-windows.opencover.xml,QRCoderTests/coverage.net9.0-windows.opencover.xml,QRCoderTests/coverage.net10.0-windows.opencover.xml
-        # Coverage reporting must not block CI (or the dependent pack job) when the
-        # Codecov upload fails for reasons unrelated to the code under test.
+        # Coverage reporting is wired up and verified, so a failed upload should
+        # surface immediately rather than silently skipping coverage.
         fail_ci_if_error: true
 
   additional-tests:
