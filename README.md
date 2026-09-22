@@ -236,7 +236,7 @@ Note that the `RussiaPaymentOrder` payload generator already includes this regis
 
 ## 🚀 CI Builds
 
-The NuGet feed contains only **major/stable** releases. If you want the latest functions and features, you can use the CI builds [via Github packages](https://github.com/Shane32/qrcoder/packages).
+The NuGet feed contains only **major/stable** releases. If you want the latest functions and features, you can use the CI builds [via Github packages](https://github.com/TTWill/QRCoder-Magick.NET-Q8/packages).
 
 _(More information on how to use Github Packages in Nuget Package Manager can be [found here](https://samlearnsazure.blog/2021/08/08/consuming-a-nuget-package-from-github-packages/).)_
 
@@ -247,6 +247,8 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 ## 📄 License
 
 QRCoder is a project originally by [Raffael Herrmann](https://raffaelherrmann.de) and was first released in 10/2013. It's licensed under the [MIT license](https://github.com/Shane32/QRCoder/blob/master/LICENSE.txt).
+
+QRCoder-Magick.NET-Q8 is a fork of QRCoder that replaces `System.Drawing` with [Magick.NET](https://github.com/dlemstra/Magick.NET).
 
 Since 2025, QRCoder has been maintained by [Shane32](https://github.com/Shane32) with contributions from the community.
 

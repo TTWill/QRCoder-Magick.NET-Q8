@@ -16,6 +16,19 @@ It contains **breaking changes** relative to upstream QRCoder. The assembly name
 namespace remain `QRCoder`, so existing `using QRCoder;` statements continue to work, but
 raster renderer signatures and the supported target frameworks have changed.
 
+## 1.0.1-preview
+
+Git Workflow updates: Fix multi-target workflows, disable code cov. for now
+
+## 1.0.2-preview
+
+Git Workflow updates: Updated publishing profile to allow postfix release flags
+Preview NuGet Released.
+
+## 1.0.3
+
+Codecov coverage restored.
+
 ### Package identity
 
 - The NuGet package ID is now **`QRCoder-Magick.NET-Q8`**. The assembly is still `QRCoder.dll`
