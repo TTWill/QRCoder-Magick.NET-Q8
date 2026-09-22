@@ -1,12 +1,10 @@
 # QRCoder
 
-(Note: Beta release)
-
-[![License](https://img.shields.io/github/license/Shane32/QRCoder)](LICENSE.txt)
-[![NuGet](https://img.shields.io/nuget/v/QRCoder)](https://www.nuget.org/packages/QRCoder/)
-[![Nuget](https://img.shields.io/nuget/dt/QRCoder)](https://www.nuget.org/packages/QRCoder)
-[![Coverage](https://codecov.io/gh/Shane32/QRCoder/branch/master/graph/badge.svg?token=3yNs88KD8S)](https://codecov.io/gh/Shane32/QRCoder)
-[![GitHub contributors](https://img.shields.io/github/contributors/Shane32/QRCoder)](https://github.com/Shane32/QRCoder/graphs/contributors)
+[![License](https://img.shields.io/github/license/TTWill/QRCoder-Magick.NET-Q8)](LICENSE.txt)
+[![NuGet](https://img.shields.io/nuget/v/QRCoder-Magick.NET-Q8)](https://www.nuget.org/packages/QRCoder-Magick.NET-Q8/)
+[![Nuget](https://img.shields.io/nuget/dt/QRCoder-Magick.NET-Q8)](https://www.nuget.org/packages/QRCoder-Magick.NET-Q8)
+[![Coverage](https://codecov.io/gh/TTWill/QRCoder-Magick.NET-Q8/branch/master/graph/badge.svg)](https://codecov.io/gh/TTWill/QRCoder-Magick.NET-Q8)
+[![GitHub contributors](https://img.shields.io/github/contributors/TTWill/QRCoder-Magick.NET-Q8)](https://github.com/TTWill/QRCoder-Magick.NET-Q8/graphs/contributors)
 
 QRCoder is a simple C# library originally created by [Raffael Herrmann](https://raffaelherrmann.de) for generating QR codes and Micro QR codes.
 
