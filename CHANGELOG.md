@@ -6,6 +6,19 @@ This project is a fork of [QRCoder](https://github.com/Shane32/QRCoder) that rep
 `System.Drawing` with [Magick.NET](https://github.com/dlemstra/Magick.NET), and is published
 on NuGet as **`QRCoder-Magick.NET-Q8`**.
 
+## 1.0.3
+
+Codecov coverage restored.
+
+## 1.0.2-preview
+
+Git Workflow updates: Updated publishing profile to allow postfix release flags
+Preview NuGet Released.
+
+## 1.0.1-preview
+
+Git Workflow updates: Fix multi-target workflows, disable code cov. for now
+
 ## 1.0.0-preview
 
 This is the first release of the fork, and versioning starts fresh at `1.0.0` rather than
@@ -16,26 +29,13 @@ It contains **breaking changes** relative to upstream QRCoder. The assembly name
 namespace remain `QRCoder`, so existing `using QRCoder;` statements continue to work, but
 raster renderer signatures and the supported target frameworks have changed.
 
-## 1.0.1-preview
-
-Git Workflow updates: Fix multi-target workflows, disable code cov. for now
-
-## 1.0.2-preview
-
-Git Workflow updates: Updated publishing profile to allow postfix release flags
-Preview NuGet Released.
-
-## 1.0.3
-
-Codecov coverage restored.
-
 ### Package identity
 
 - The NuGet package ID is now **`QRCoder-Magick.NET-Q8`**. The assembly is still `QRCoder.dll`
   and the root namespace is still `QRCoder`, so only the `<PackageReference>` needs updating:
 
   ```xml
-  <PackageReference Include="QRCoder-Magick.NET-Q8" Version="1.0.0-preview" />
+  <PackageReference Include="QRCoder-Magick.NET-Q8" Version="1.0.2-preview" />
   ```
 
 ### Breaking: System.Drawing replaced with Magick.NET
